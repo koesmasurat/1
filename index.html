@@ -10,10 +10,64 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root { --main-color: #10b981; /* Emerald 500 */ }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .active-link { border-left: 4px solid var(--main-color); background-color: #ecfdf5; font-weight: 600; }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 50; justify-content: center; align-items: center; }
+        :root { 
+            --main-color: #f59e0b; /* Amber 500 */ 
+            --main-color-light: #fcd34d; /* Amber 300 */
+        }
+        
+        /* Custom scrollbar for a more modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-image: url('https://images.unsplash.com/photo-1588345921523-c2dcdb7f1dcd?q=80&w=2670&auto=format&fit=crop');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+        }
+        .active-link { 
+            border-left: 4px solid var(--main-color-light); 
+            background-color: rgba(255, 255, 255, 0.15); 
+            font-weight: 600; 
+            color: white;
+        }
+        
+        .glass-card {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .form-input {
+            background: rgba(0,0,0,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            color: white !important;
+        }
+        .form-input::placeholder {
+            color: rgba(255,255,255,0.5) !important;
+        }
+
+        .loading-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(10px);
+            z-index: 50; justify-content: center; align-items: center; 
+        }
         .modal { display: none; }
     </style>
 </head>
@@ -21,7 +75,7 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
-        <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-main-color" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -29,210 +83,209 @@
 
     <!-- Main App Container -->
     <div id="app" class="flex">
-        <!-- Sidebar (Hidden by default, shown by JS only when logged in) -->
-        <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out bg-white w-64 shadow-xl z-40">
-            <div class="p-6 border-b">
-                <h1 class="text-xl font-bold text-gray-800">SIMAS RSUD</h1>
-                <p class="text-sm text-gray-500">dr. R. Koesma</p>
+        <!-- Sidebar -->
+        <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-64 glass-card z-40 m-2 rounded-2xl">
+            <div class="p-6 border-b border-white/20">
+                <h1 class="text-xl font-bold text-white">SIMAS RSUD</h1>
+                <p class="text-sm text-gray-300">dr. R. Koesma</p>
             </div>
             <nav class="mt-6">
-                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
                 </a>
-                <a href="#surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="mail-check" class="w-5 h-5"></i><span>Surat Masuk</span>
                 </a>
-                <a href="#surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="send" class="w-5 h-5"></i><span>Surat Keluar</span>
                 </a>
-                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="layers-3" class="w-5 h-5"></i><span>Disposisi Saya</span>
                 </a>
-                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span>
                 </a>
-                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
                 </a>
-                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-700 hover:bg-gray-50 rounded-r-full flex items-center space-x-3">
+                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>
                 </a>
             </nav>
-            <div class="absolute bottom-0 p-6 w-full border-t">
-                <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-600 hover:text-red-800 transition duration-150">
+            <div class="absolute bottom-0 p-6 w-full border-t border-white/20">
+                <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-400 hover:text-red-300 transition duration-150">
                     <i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span>
                 </button>
             </div>
         </div>
         
-        <!-- Content Area (md:ml-64 added dynamically if logged in) -->
-        <div id="content-area" class="flex-1 transition-all duration-200 p-4 md:p-8">
-            <!-- Mobile Menu Toggle (Only visible if sidebar is shown, managed by JS) -->
-            <button id="menu-toggle" class="md:hidden p-2 rounded-full bg-white shadow-md mb-4 fixed top-4 right-4 z-50">
-                <i data-lucide="menu" class="w-6 h-6 text-gray-700"></i>
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 transition-all duration-300 p-4 md:p-8">
+            <button id="menu-toggle" class="md:hidden p-2 rounded-full glass-card mb-4 fixed top-4 right-4 z-50">
+                <i data-lucide="menu" class="w-6 h-6 text-white"></i>
             </button>
 
-            <!-- Pages -->
+            <!-- Pages Container -->
             <div id="pages-container">
                 <!-- Login Page -->
-                <div id="login-page" class="page max-w-md mx-auto mt-20 p-8 bg-white shadow-xl rounded-xl">
-                    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Login SIMAS RSUD</h2>
-                    <p class="text-sm text-center text-red-500 mb-4" id="login-error-message"></p>
+                <div id="login-page" class="page max-w-md mx-auto mt-20 p-8 glass-card">
+                    <h2 class="text-2xl font-bold mb-6 text-center text-white">Login SIMAS RSUD</h2>
+                    <p class="text-sm text-center text-red-400 mb-4" id="login-error-message"></p>
                     <form id="login-form">
                         <div class="mb-4">
-                            <label for="login-userid" class="block text-sm font-medium text-gray-700">User ID</label>
-                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Masukkan User ID Anda">
+                            <label for="login-userid" class="block text-sm font-medium text-gray-200">User ID</label>
+                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input" placeholder="Masukkan User ID Anda">
                         </div>
                         <div class="mb-6">
-                            <label for="login-password" class="block text-sm font-medium text-gray-700">Password</label>
-                            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                            <label for="login-password" class="block text-sm font-medium text-gray-200">Password</label>
+                            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input">
                         </div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150">
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition duration-150">
                             Masuk
                         </button>
                     </form>
-                    <p class="mt-4 text-center text-sm text-gray-600">
-                        Belum punya akun? <a href="#" onclick="showPage('register')" class="font-medium text-emerald-600 hover:text-emerald-500">Daftar Sekarang</a>
+                    <p class="mt-4 text-center text-sm text-gray-300">
+                        Belum punya akun? <a href="#" onclick="showPage('register')" class="font-medium text-amber-400 hover:text-amber-300">Daftar Sekarang</a>
                     </p>
                 </div>
                 
                 <!-- Register Page -->
-                <div id="register-page" class="page max-w-lg mx-auto mt-10 p-8 bg-white shadow-xl rounded-xl hidden">
-                    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Pendaftaran Akun Baru</h2>
-                    <p class="text-sm text-center text-red-500 mb-4" id="register-error-message"></p>
+                <div id="register-page" class="page max-w-lg mx-auto mt-10 p-8 glass-card hidden">
+                    <h2 class="text-2xl font-bold mb-6 text-center text-white">Pendaftaran Akun Baru</h2>
+                    <p class="text-sm text-center text-red-400 mb-4" id="register-error-message"></p>
                     <form id="register-form">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="reg-userid" class="block text-sm font-medium text-gray-700">User ID (untuk login)</label>
-                                <input type="text" id="reg-userid" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                <label for="reg-userid" class="block text-sm font-medium text-gray-200">User ID (untuk login)</label>
+                                <input type="text" id="reg-userid" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                             </div>
                             <div>
-                                <label for="reg-nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                                <input type="text" id="reg-nama" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                <label for="reg-nama" class="block text-sm font-medium text-gray-200">Nama Lengkap</label>
+                                <input type="text" id="reg-nama" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                             </div>
                             <div>
-                                <label for="reg-wa" class="block text-sm font-medium text-gray-700">Nomor WA</label>
-                                <input type="text" id="reg-wa" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="6281xxxx">
+                                <label for="reg-wa" class="block text-sm font-medium text-gray-200">Nomor WA</label>
+                                <input type="text" id="reg-wa" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm" placeholder="6281xxxx">
                             </div>
                              <div>
-                                <label for="reg-jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
-                                <input type="text" id="reg-jabatan" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                <label for="reg-jabatan" class="block text-sm font-medium text-gray-200">Jabatan</label>
+                                <input type="text" id="reg-jabatan" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                             </div>
                             <div class="md:col-span-2">
-                                <label for="reg-email" class="block text-sm font-medium text-gray-700">Email (Opsional)</label>
-                                <input type="email" id="reg-email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                <label for="reg-email" class="block text-sm font-medium text-gray-200">Email (Opsional)</label>
+                                <input type="email" id="reg-email" class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                             </div>
                         </div>
                         <div class="mt-4">
-                            <label for="reg-password" class="block text-sm font-medium text-gray-700">Password</label>
-                            <input type="password" id="reg-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <label for="reg-password" class="block text-sm font-medium text-gray-200">Password</label>
+                            <input type="password" id="reg-password" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                         </div>
-                        <button type="submit" class="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700">
+                        <button type="submit" class="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700">
                             Daftar
                         </button>
                     </form>
-                    <p class="mt-4 text-center text-sm text-gray-600">
-                        Sudah punya akun? <a href="#" onclick="showPage('login')" class="font-medium text-emerald-600 hover:text-emerald-500">Login</a>
+                    <p class="mt-4 text-center text-sm text-gray-300">
+                        Sudah punya akun? <a href="#" onclick="showPage('login')" class="font-medium text-amber-400 hover:text-amber-300">Login</a>
                     </p>
                 </div>
 
-                <!-- Dashboard Page (Content populated by JS) -->
-                <div id="dashboard-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard</h2>
-                    <p class="text-md text-gray-600 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-2">Dashboard</h2>
+                    <p class="text-md text-gray-300 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
                     <div id="dashboard-content">
                         <!-- Stats Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500">
-                                <p class="text-sm font-medium text-gray-500">Surat Masuk Bulan Ini</p>
-                                <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-masuk">0</p>
+                            <div class="p-6 glass-card border-t-4 border-sky-400">
+                                <p class="text-sm font-medium text-gray-300">Surat Masuk Bulan Ini</p>
+                                <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
                             </div>
-                            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-yellow-500">
-                                <p class="text-sm font-medium text-gray-500">Surat Belum Didisposisi</p>
-                                <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-undisposed">0</p>
+                            <div class="p-6 glass-card border-t-4 border-amber-400">
+                                <p class="text-sm font-medium text-gray-300">Surat Belum Didisposisi</p>
+                                <p class="text-3xl font-bold mt-1" id="stat-undisposed">0</p>
                             </div>
-                            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500">
-                                <p class="text-sm font-medium text-gray-500">Surat Belum Ditindaklanjuti</p>
-                                <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-unfollowed">0</p>
+                            <div class="p-6 glass-card border-t-4 border-rose-500">
+                                <p class="text-sm font-medium text-gray-300">Surat Belum Ditindaklanjuti</p>
+                                <p class="text-3xl font-bold mt-1" id="stat-unfollowed">0</p>
                             </div>
                         </div>
 
-                        <!-- Notification/Surat List -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-800">Disposisi Terbaru untuk Anda</h3>
+                        <!-- Disposisi List -->
+                        <div class="p-6 glass-card">
+                            <h3 class="text-xl font-semibold mb-4">Disposisi Terbaru untuk Anda</h3>
                             <div id="disposisi-list-dashboard">
-                                <p class="text-gray-500">Memuat data...</p>
+                                <p class="text-gray-300">Memuat data...</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Surat Masuk Page -->
-                <div id="surat-masuk-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Surat Masuk</h2>
-                    <button onclick="document.getElementById('modal-tambah-surat').style.display='flex';" class="mb-6 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-emerald-700 transition duration-150 flex items-center">
+                <div id="surat-masuk-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Surat Masuk</h2>
+                    <button onclick="document.getElementById('modal-tambah-surat').style.display='flex';" class="mb-6 bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
                         <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Masuk
                     </button>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="p-6 glass-card">
                         <div class="mb-4">
-                            <input type="text" id="search-surat" onkeyup="filterSurat('surat-masuk-list', this.value)" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <input type="text" id="search-surat" onkeyup="filterSurat('surat-masuk-list', this.value)" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 form-input rounded-md">
                         </div>
                         <div id="surat-masuk-list" class="overflow-x-auto">
-                            <p class="text-gray-500">Data surat masuk akan dimuat di sini...</p>
+                            <p class="text-gray-300">Data surat masuk akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Surat Keluar Page (Simplifikasi: Sama dengan Masuk, hanya label berbeda) -->
-                <div id="surat-keluar-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Surat Keluar</h2>
-                    <button onclick="document.getElementById('modal-tambah-surat').style.display='flex';" class="mb-6 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-emerald-700 transition duration-150 flex items-center">
+                <!-- Surat Keluar Page -->
+                <div id="surat-keluar-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Surat Keluar</h2>
+                    <button onclick="document.getElementById('modal-tambah-surat').style.display='flex';" class="mb-6 bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
                         <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Keluar
                     </button>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="p-6 glass-card">
                         <div class="mb-4">
-                            <input type="text" id="search-surat-keluar" onkeyup="filterSurat('surat-keluar-list', this.value)" placeholder="Cari: Nomor/Perihal/Penerima" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <input type="text" id="search-surat-keluar" onkeyup="filterSurat('surat-keluar-list', this.value)" placeholder="Cari: Nomor/Perihal/Penerima" class="w-full px-3 py-2 form-input rounded-md">
                         </div>
                         <div id="surat-keluar-list" class="overflow-x-auto">
-                            <p class="text-gray-500">Data surat keluar akan dimuat di sini...</p>
+                            <p class="text-gray-300">Data surat keluar akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Disposisi Saya Page -->
-                <div id="disposisi-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Disposisi Saya</h2>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div id="disposisi-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Disposisi Saya</h2>
+                    <div class="p-6 glass-card">
                         <div id="my-disposisi-list" class="overflow-x-auto">
-                            <p class="text-gray-500">Daftar disposisi untuk Anda akan dimuat di sini...</p>
+                            <p class="text-gray-300">Daftar disposisi untuk Anda akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Arsip Page -->
-                <div id="arsip-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Arsip Dokumen</h2>
-                    <p class="text-gray-600 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div id="arsip-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Arsip Dokumen</h2>
+                    <p class="text-gray-300 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
+                    <div class="p-6 glass-card">
                         <div id="arsip-list">
-                            <p class="text-gray-500">Data arsip akan dimuat di sini...</p>
+                            <p class="text-gray-300">Data arsip akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- User Management Page -->
-                <div id="users-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Manajemen User</h2>
-                    <div id="user-management-content" class="bg-white p-6 rounded-xl shadow-lg">
-                        <p class="text-gray-500">Daftar pengguna akan dimuat di sini...</p>
+                <div id="users-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Manajemen User</h2>
+                    <div id="user-management-content" class="p-6 glass-card">
+                        <p class="text-gray-300">Daftar pengguna akan dimuat di sini...</p>
                     </div>
                 </div>
 
                 <!-- Log Page -->
-                <div id="log-page" class="page hidden">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Log Aktivitas</h2>
-                    <div id="log-content" class="bg-white p-6 rounded-xl shadow-lg">
-                        <p class="text-gray-500">Log sistem akan dimuat di sini...</p>
+                <div id="log-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Log Aktivitas</h2>
+                    <div id="log-content" class="p-6 glass-card">
+                        <p class="text-gray-300">Log sistem akan dimuat di sini...</p>
                     </div>
                 </div>
             </div>
@@ -240,76 +293,76 @@
     </div>
 
     <!-- MODAL: Tambah Surat -->
-    <div id="modal-tambah-surat" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full justify-center items-center z-50">
-        <div class="relative p-5 w-full max-w-2xl bg-white rounded-xl shadow-xl">
-            <h3 class="text-xl font-bold mb-4">Input Surat</h3>
+    <div id="modal-tambah-surat" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-5 w-full max-w-2xl glass-card">
+            <h3 class="text-xl font-bold mb-4 text-white">Input Surat</h3>
             <form id="form-surat">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Jenis Surat</label>
-                    <select id="surat-jenis" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                <div class="mb-4 text-white">
+                    <label class="block text-sm font-medium text-gray-200">Jenis Surat</label>
+                    <select id="surat-jenis" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                         <option value="Masuk">Surat Masuk</option>
                         <option value="Keluar">Surat Keluar</option>
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Nomor Surat</label>
-                    <input type="text" id="surat-nomor" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-200">Nomor Surat</label>
+                    <input type="text" id="surat-nomor" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Perihal</label>
-                    <input type="text" id="surat-perihal" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-200">Perihal</label>
+                    <input type="text" id="surat-perihal" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Tanggal Surat</label>
-                    <input type="date" id="surat-tanggal" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-200">Tanggal Surat</label>
+                    <input type="date" id="surat-tanggal" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700" id="label-pengirim">Pengirim</label>
-                    <input type="text" id="surat-pengirim" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-200" id="label-pengirim">Pengirim</label>
+                    <input type="text" id="surat-pengirim" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Upload File (PDF/DOCX/JPG/PNG)</label>
-                    <input type="file" id="surat-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required class="mt-1 block w-full">
+                    <label class="block text-sm font-medium text-gray-200">Upload File (PDF/DOCX/JPG/PNG)</label>
+                    <input type="file" id="surat-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required class="mt-1 block w-full text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
                 </div>
-                <div id="surat-form-message" class="text-sm text-red-500 mb-4"></div>
+                <div id="surat-form-message" class="text-sm text-red-400 mb-4"></div>
                 <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="document.getElementById('modal-tambah-surat').style.display='none';" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">Simpan Surat</button>
+                    <button type="button" onclick="document.getElementById('modal-tambah-surat').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Simpan Surat</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- MODAL: Disposisi -->
-    <div id="modal-disposisi" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full justify-center items-center z-50">
-        <div class="relative p-5 w-full max-w-xl bg-white rounded-xl shadow-xl">
-            <h3 class="text-xl font-bold mb-4">Disposisi Surat: <span id="dispo-surat-nomor" class="text-emerald-600"></span></h3>
+    <div id="modal-disposisi" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-5 w-full max-w-xl glass-card">
+            <h3 class="text-xl font-bold mb-4 text-white">Disposisi Surat: <span id="dispo-surat-nomor" class="text-amber-300"></span></h3>
             <form id="form-disposisi">
                 <input type="hidden" id="dispo-surat-id">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Pilih Penerima Disposisi</label>
-                    <select id="dispo-penerima" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-200">Pilih Penerima Disposisi</label>
+                    <select id="dispo-penerima" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
                         <!-- Options filled by JS -->
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Instruksi/Catatan</label>
-                    <textarea id="dispo-catatan" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+                    <label class="block text-sm font-medium text-gray-200">Instruksi/Catatan</label>
+                    <textarea id="dispo-catatan" rows="3" class="mt-1 block w-full px-3 py-2 rounded-md form-input"></textarea>
                 </div>
-                <div id="dispo-form-message" class="text-sm text-red-500 mb-4"></div>
+                <div id="dispo-form-message" class="text-sm text-red-400 mb-4"></div>
                 <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="document.getElementById('modal-disposisi').style.display='none';" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Kirim Disposisi</button>
+                    <button type="button" onclick="document.getElementById('modal-disposisi').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Kirim Disposisi</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL: Custom Alert/Confirm (Ganti Alert/Confirm native) -->
-    <div id="modal-custom" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full justify-center items-center z-50">
-        <div class="relative p-6 w-full max-w-sm bg-white rounded-xl shadow-2xl">
-            <h3 id="custom-modal-title" class="text-lg font-bold mb-3 text-gray-800">Notifikasi</h3>
-            <p id="custom-modal-message" class="text-sm text-gray-700 mb-6"></p>
+    <!-- MODAL: Custom Alert/Confirm -->
+    <div id="modal-custom" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-6 w-full max-w-sm glass-card">
+            <h3 id="custom-modal-title" class="text-lg font-bold mb-3 text-white">Notifikasi</h3>
+            <p id="custom-modal-message" class="text-sm text-gray-200 mb-6"></p>
             <div id="custom-modal-actions" class="flex justify-end space-x-2">
                 <!-- Action buttons inserted by JS -->
             </div>
@@ -321,34 +374,31 @@
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
         
         let currentUser = null;
-        let allUsers = []; // Stores the list of all users for disposition purposes
-        let confirmCallback = null; // Callback for the custom confirm modal
+        let allUsers = [];
+        let confirmCallback = null;
 
         // --- UTILITY FUNCTIONS ---
         
-        /** Displays a notification message */
         function showMessage(elementId, message, isError = true) {
             const el = document.getElementById(elementId);
             if(el) {
                 el.textContent = message;
-                el.className = `text-sm mb-4 ${isError ? 'text-red-500' : 'text-green-600'}`;
+                el.className = `text-sm mb-4 ${isError ? 'text-red-400' : 'text-green-400'}`;
                 if (!message) el.className += ' hidden';
                 else el.className = el.className.replace(' hidden', '');
             }
         }
         
-        /** Shows a custom alert modal (replaces native alert()) */
         function showCustomAlert(message, title = 'Notifikasi') {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = title;
             document.getElementById('custom-modal-message').textContent = message;
             
             const actions = document.getElementById('custom-modal-actions');
-            actions.innerHTML = `<button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">OK</button>`;
+            actions.innerHTML = `<button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">OK</button>`;
             modal.style.display = 'flex';
         }
         
-        /** Shows a custom confirm modal (replaces native confirm()) */
         function showCustomConfirm(message, callback) {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = 'Konfirmasi Tindakan';
@@ -357,7 +407,7 @@
 
             const actions = document.getElementById('custom-modal-actions');
             actions.innerHTML = `
-                <button id="btn-cancel" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Batal</button>
+                <button id="btn-cancel" class="px-4 py-2 bg-gray-500/50 rounded-md hover:bg-gray-500/70 text-white">Batal</button>
                 <button id="btn-confirm" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ya, Lanjutkan</button>
             `;
             
@@ -373,30 +423,18 @@
             modal.style.display = 'flex';
         }
 
-
-        /** Shows or hides the loading overlay */
         function showLoading(show) {
             document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
         }
         
-        /**
-         * A wrapper for the fetch API that includes retry logic with exponential backoff.
-         * This is crucial for handling intermittent network issues or temporary server errors.
-         * @param {string} url The URL to fetch.
-         * @param {object} options The fetch options (method, headers, body, etc.).
-         * @param {number} retries The number of retry attempts.
-         * @returns {Promise<object>} A promise that resolves with the JSON response.
-         */
         async function fetchWithRetry(url, options = {}, retries = 3) {
             let attempt = 0;
             while (attempt < retries) {
                 try {
                     const response = await fetch(url, options);
                     if (!response.ok) {
-                        // For non-network errors (e.g., 500, 404), don't retry, just throw.
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    // Handle cases where GAS returns HTML error pages instead of JSON
                     const text = await response.text();
                     try {
                         return JSON.parse(text);
@@ -408,18 +446,15 @@
                     attempt++;
                     console.warn(`Fetch attempt ${attempt} failed: ${error.message}. Retrying...`);
                     if (attempt >= retries) {
-                        throw error; // Throw the final error after all retries fail.
+                        throw error; 
                     }
-                    // Exponential backoff: wait 1s, then 2s, etc., before retrying.
                     await new Promise(res => setTimeout(res, 1000 * attempt));
                 }
             }
         }
 
-
         // --- AUTHENTICATION & ROUTING ---
 
-        /** Checks login status when the app loads */
         function checkLoginStatus() {
             const userData = localStorage.getItem('currentUser');
             const sidebarEl = document.getElementById('sidebar');
@@ -430,7 +465,7 @@
                 document.getElementById('user-display-name').textContent = currentUser.nama;
                 document.getElementById('user-display-jabatan').textContent = currentUser.jabatan;
                 
-                contentAreaEl.classList.add('md:ml-64');
+                contentAreaEl.classList.add('md:ml-[-15rem]'); // Adjust for new sidebar layout
                 sidebarEl.classList.remove('hidden');
 
                 const initialHash = window.location.hash.substring(1) || 'dashboard';
@@ -438,7 +473,7 @@
             } else {
                 currentUser = null;
                 
-                contentAreaEl.classList.remove('md:ml-64');
+                contentAreaEl.classList.remove('md:ml-[-15rem]');
                 sidebarEl.classList.add('hidden');
                 
                 showPage('login');
@@ -446,9 +481,9 @@
             lucide.createIcons(); 
         }
 
-        /** Displays a page based on its ID */
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
 
             const targetPage = document.getElementById(pageId + '-page');
             if (targetPage) {
@@ -476,11 +511,9 @@
             }
         }
 
-        /** Logs out the user */
         function logout() {
             localStorage.removeItem('currentUser');
             currentUser = null;
-            // A full reload ensures all states are cleared properly.
             window.location.href = window.location.pathname;
         }
 
@@ -504,7 +537,6 @@
             });
         });
 
-
         // --- GAS API INTERACTION FUNCTIONS ---
 
         async function handleLogin(e) {
@@ -512,21 +544,19 @@
             const userid = document.getElementById('login-userid').value.trim();
             const password = document.getElementById('login-password').value.trim();
             
-            if (!GAS_API_URL.startsWith('https://')) {
-                showCustomAlert('ERROR: Harap ganti variabel GAS_API_URL dengan URL Web App Anda di kode HTML.', 'Kesalahan Konfigurasi');
+            if (!GAS_API_URL.startsWith('https://') || GAS_API_URL.includes('AKfycbw...')) {
+                showCustomAlert('ERROR: Harap ganti variabel GAS_API_URL dengan URL Web App Anda di dalam kode HTML.', 'Kesalahan Konfigurasi');
                 return;
             }
 
             showLoading(true);
             try {
-                // Using GET with plain password as per the backend script's design
                 const url = `${GAS_API_URL}?action=login&userid=${encodeURIComponent(userid)}&password=${encodeURIComponent(password)}`;
-                
                 const data = await fetchWithRetry(url, { method: 'GET' });
 
                 if (data.status === 'success') {
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    checkLoginStatus(); // Re-initialize app state
+                    window.location.reload(); // Reload to apply logged-in state
                 } else {
                     showMessage('login-error-message', data.message || 'Login gagal. Cek User ID/Password.', true);
                 }
@@ -546,7 +576,6 @@
 
             showLoading(true);
             try {
-                // Using GET with plain password
                 const params = new URLSearchParams({
                     action: 'register',
                     userid: form['reg-userid'].value.trim(),
@@ -557,7 +586,6 @@
                     password: password
                 });
                 const url = `${GAS_API_URL}?${params.toString()}`;
-
                 const result = await fetchWithRetry(url, { method: 'GET' });
 
                 if (result.status === 'success') {
@@ -578,7 +606,6 @@
 
         async function handleSuratSubmit(e) {
             e.preventDefault();
-            
             const form = document.getElementById('form-surat');
             const fileInput = document.getElementById('surat-file');
             
@@ -593,7 +620,6 @@
             reader.onload = async function(event) {
                 showLoading(true);
                 const base64File = event.target.result.split(',')[1];
-
                 const payload = {
                     action: 'input_surat',
                     jenis: form['surat-jenis'].value,
@@ -608,7 +634,6 @@
                 };
 
                 try {
-                    // All API calls other than login/register use POST with a JSON body
                     const result = await fetchWithRetry(GAS_API_URL, {
                         method: 'POST',
                         body: JSON.stringify(payload),
@@ -618,14 +643,13 @@
                         showCustomAlert('Surat berhasil disimpan dan diarsip!', 'Berhasil');
                         form.reset();
                         document.getElementById('modal-tambah-surat').style.display='none';
-                        loadSuratData(payload.jenis); // Refresh list
+                        loadSuratData(payload.jenis);
                     } else {
                         showMessage('surat-form-message', result.message || 'Gagal menyimpan surat.', true);
                     }
                 } catch (error) {
                     console.error('Surat submit error:', error);
-                    let errorMessage = 'Terjadi kesalahan jaringan atau server.';
-                    showMessage('surat-form-message', errorMessage, true);
+                    showMessage('surat-form-message', 'Terjadi kesalahan jaringan atau server.', true);
                 } finally {
                     showLoading(false);
                 }
@@ -637,21 +661,21 @@
         async function loadSuratData(jenis) {
             const listId = jenis === 'Masuk' ? 'surat-masuk-list' : 'surat-keluar-list';
             const listContainer = document.getElementById(listId);
-            listContainer.innerHTML = '<p class="text-gray-500">Memuat data surat...</p>';
+            listContainer.innerHTML = '<p class="text-gray-300">Memuat data surat...</p>';
             
             showLoading(true);
             try {
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
-                    allUsers = data.users || []; // Store the user list
+                    allUsers = data.users || [];
                     renderSuratList(listContainer, data.surat, jenis);
                 } else {
-                    listContainer.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat data surat.'}</p>`;
+                    listContainer.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data surat.'}</p>`;
                 }
             } catch (error) {
                 console.error(`Load Surat ${jenis} error:`, error);
-                listContainer.innerHTML = `<p class="text-red-500">Kesalahan jaringan: ${error.message}</p>`;
+                listContainer.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
             }
@@ -659,43 +683,43 @@
         
         function renderSuratList(container, suratList, jenis) {
             if (!suratList || suratList.length === 0) {
-                container.innerHTML = '<p class="text-gray-500">Belum ada data surat.</p>';
+                container.innerHTML = '<p class="text-gray-300">Belum ada data surat.</p>';
                 return;
             }
 
             let html = `
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-white/20">
+                <thead class="bg-black/20">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nomor Surat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perihal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${jenis === 'Masuk' ? 'Pengirim' : 'Penerima'}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nomor Surat</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Perihal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">${jenis === 'Masuk' ? 'Pengirim' : 'Penerima'}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tanggal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-white/20">
             `;
             
             suratList.forEach(surat => {
-                const statusColor = surat.status === 'Belum Disposisi' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800';
+                const statusColor = surat.status === 'Belum Disposisi' ? 'bg-yellow-400/20 text-yellow-300' : 'bg-green-400/20 text-green-300';
                 
                 const disposisiButton = (currentUser.jabatan === 'Pimpinan' || currentUser.jabatan === 'Admin') && jenis === 'Masuk'
-                    ? `<button onclick="openDisposisiModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 font-medium ml-3">Disposisi</button>`
+                    ? `<button onclick="openDisposisiModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-amber-400 hover:text-amber-300 font-medium ml-3">Disposisi</button>`
                     : '';
                     
                 html += `
-                    <tr data-search="${surat.nomor_surat} ${surat.perihal} ${surat.pengirim_penerima}">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${surat.nomor_surat}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${surat.perihal}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${surat.pengirim_penerima}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${surat.tanggal}</td>
+                    <tr data-search="${surat.nomor_surat} ${surat.perihal} ${surat.pengirim_penerima}" class="hover:bg-black/10">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${surat.nomor_surat}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.perihal}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.pengirim_penerima}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.tanggal}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${surat.status}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="${surat.file_url}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-medium">Lihat File</a>
+                            <a href="${surat.file_url}" target="_blank" class="text-amber-400 hover:text-amber-300 font-medium">Lihat File</a>
                             ${disposisiButton}
                         </td>
                     </tr>
@@ -716,7 +740,7 @@
             select.innerHTML = '<option value="">Pilih Penerima</option>';
             
             allUsers.filter(u => u.id !== currentUser.id && u.status === 'Aktif').forEach(user => {
-                select.innerHTML += `<option value="${user.id}">${user.nama} (${user.jabatan})</option>`;
+                select.innerHTML += `<option value="${user.id}" class="text-black">${user.nama} (${user.jabatan})</option>`;
             });
             
             document.getElementById('modal-disposisi').style.display='flex';
@@ -743,7 +767,6 @@
                     ke_user_id: penerimaId,
                     catatan: catatan
                 };
-
                 const result = await fetchWithRetry(GAS_API_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
@@ -767,7 +790,7 @@
         
         async function loadMyDisposisi() {
             const container = document.getElementById('my-disposisi-list');
-            container.innerHTML = '<p class="text-gray-500">Memuat disposisi...</p>';
+            container.innerHTML = '<p class="text-gray-300">Memuat disposisi...</p>';
             
             showLoading(true);
             try {
@@ -776,11 +799,11 @@
                 if (data.status === 'success') {
                     renderMyDisposisiList(container, data.disposisi);
                 } else {
-                    container.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat data disposisi.'}</p>`;
+                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data disposisi.'}</p>`;
                 }
             } catch (error) {
                 console.error('Load My Disposisi error:', error);
-                container.innerHTML = `<p class="text-red-500">Kesalahan jaringan: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
             }
@@ -788,47 +811,45 @@
 
         function renderMyDisposisiList(container, disposisiList) {
              if (!disposisiList || disposisiList.length === 0) {
-                container.innerHTML = '<p class="text-gray-500">Tidak ada disposisi baru untuk Anda.</p>';
+                container.innerHTML = '<p class="text-gray-300">Tidak ada disposisi baru untuk Anda.</p>';
                 return;
             }
 
-            let html = `
-            <div class="space-y-4">
-            `;
+            let html = `<div class="space-y-4">`;
             
             disposisiList.forEach(d => {
-                const statusBacaColor = d.status_baca === 'Belum Dibaca' ? 'text-red-600' : 'text-green-600';
-                const statusTLColor = d.status_tindak_lanjut === 'Belum Diproses' ? 'text-yellow-600' : (d.status_tindak_lanjut === 'Diproses' ? 'text-blue-600' : 'text-emerald-600');
+                const statusBacaColor = d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400';
+                const statusTLColor = d.status_tindak_lanjut === 'Belum Diproses' ? 'text-yellow-400' : (d.status_tindak_lanjut === 'Diproses' ? 'text-blue-400' : 'text-green-400');
                 
                 const markReadButton = d.status_baca === 'Belum Dibaca'
-                    ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-blue-600 hover:underline font-medium">Tandai Dibaca</button>`
+                    ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-amber-400 hover:underline font-medium">Tandai Dibaca</button>`
                     : '';
                 
                 const markTLSelect = d.status_tindak_lanjut !== 'Selesai'
-                    ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-sm border rounded p-1">
-                        <option value="Belum Diproses" ${d.status_tindak_lanjut === 'Belum Diproses' ? 'selected' : ''}>Belum Diproses</option>
-                        <option value="Diproses" ${d.status_tindak_lanjut === 'Diproses' ? 'selected' : ''}>Diproses</option>
-                        <option value="Selesai" ${d.status_tindak_lanjut === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                    ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-sm border rounded p-1 form-input">
+                        <option class="text-black" value="Belum Diproses" ${d.status_tindak_lanjut === 'Belum Diproses' ? 'selected' : ''}>Belum Diproses</option>
+                        <option class="text-black" value="Diproses" ${d.status_tindak_lanjut === 'Diproses' ? 'selected' : ''}>Diproses</option>
+                        <option class="text-black" value="Selesai" ${d.status_tindak_lanjut === 'Selesai' ? 'selected' : ''}>Selesai</option>
                        </select>`
                     : `<span class="text-sm font-semibold ${statusTLColor}">Selesai</span>`;
 
                 html += `
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 ${d.status_baca === 'Belum Dibaca' ? 'border-red-500' : 'border-gray-300'}">
+                    <div class="glass-card p-4 border-l-4 ${d.status_baca === 'Belum Dibaca' ? 'border-red-500' : 'border-gray-500'}">
                         <div class="flex justify-between items-start">
                              <div>
-                                <p class="font-bold text-gray-800">${d.nomor_surat}</p>
-                                <p class="text-sm text-gray-600">${d.perihal}</p>
-                                <p class="text-xs text-gray-500 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
+                                <p class="font-bold text-white">${d.nomor_surat}</p>
+                                <p class="text-sm text-gray-300">${d.perihal}</p>
+                                <p class="text-xs text-gray-400 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
                             </div>
                             <div class="flex-shrink-0 ml-4">
                                 ${markTLSelect}
                             </div>
                         </div>
-                        <div class="mt-3 p-3 bg-gray-50 rounded-md">
-                            <p class="text-sm text-gray-700"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
+                        <div class="mt-3 p-3 bg-black/20 rounded-md">
+                            <p class="text-sm text-gray-200"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
                         </div>
                         <div class="mt-3 flex items-center space-x-4">
-                            <a href="${d.file_url}" target="_blank" class="text-sm text-emerald-600 hover:underline font-medium">Lihat File Surat</a>
+                            <a href="${d.file_url}" target="_blank" class="text-sm text-amber-400 hover:underline font-medium">Lihat File Surat</a>
                             ${markReadButton}
                         </div>
                     </div>
@@ -844,9 +865,9 @@
             try {
                 const payload = {
                     action: 'update_disposisi_status',
-                    id: disposisiId,
-                    statusType: statusType, // 'baca' or 'tindak_lanjut'
-                    value: value, // for tindak_lanjut
+                    id: disposisiId, 
+                    statusType: statusType, 
+                    value: value, 
                     userId: currentUser.id
                 };
 
@@ -856,7 +877,6 @@
                 });
 
                 if (result.status === 'success') {
-                    // Refresh lists without showing an alert
                     loadMyDisposisi(); 
                     loadDashboardData(); 
                 } else {
@@ -887,16 +907,16 @@
                          let html = '';
                          data.latestDisposisi.slice(0, 5).forEach(d => {
                             html += `
-                                <div class="p-3 border-b hover:bg-gray-50 rounded-lg">
-                                    <p class="font-semibold text-gray-800">${d.perihal}</p>
-                                    <p class="text-sm text-gray-600">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
-                                    Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-600' : 'text-green-600'}">${d.status_baca}</span></p>
+                                <div class="p-3 border-b border-white/20 hover:bg-black/10 rounded-lg">
+                                    <p class="font-semibold text-white">${d.perihal}</p>
+                                    <p class="text-sm text-gray-300">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
+                                    Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400'}">${d.status_baca}</span></p>
                                 </div>
                             `;
                          });
                          container.innerHTML = html;
                     } else {
-                        container.innerHTML = '<p class="text-gray-500">Tidak ada disposisi atau notifikasi terbaru.</p>';
+                        container.innerHTML = '<p class="text-gray-300">Tidak ada disposisi atau notifikasi terbaru.</p>';
                     }
                 }
             } catch (error) {
@@ -909,11 +929,11 @@
         async function loadUserManagement() {
             const container = document.getElementById('user-management-content');
             if (currentUser.jabatan !== 'Admin') {
-                container.innerHTML = '<p class="text-red-500 font-semibold">Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
+                container.innerHTML = '<p class="text-red-400 font-semibold">Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
                 return;
             }
 
-            container.innerHTML = '<p class="text-gray-500">Memuat daftar user...</p>';
+            container.innerHTML = '<p class="text-gray-300">Memuat daftar user...</p>';
             showLoading(true);
             try {
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
@@ -921,11 +941,11 @@
                 if (data.status === 'success') {
                     renderUserList(container, data.users);
                 } else {
-                    container.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat data user.'}</p>`;
+                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data user.'}</p>`;
                 }
             } catch (error) {
                 console.error('Load User Management error:', error);
-                container.innerHTML = `<p class="text-red-500">Kesalahan jaringan: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
             }
@@ -933,33 +953,33 @@
         
         function renderUserList(container, userList) {
             let html = `
-            <p class="text-sm text-gray-600 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <p class="text-sm text-gray-300 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
+            <table class="min-w-full divide-y divide-white/20">
+                <thead class="bg-black/20">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. WA</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nama</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">No. WA</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Jabatan</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-white/20">
             `;
             
             userList.forEach(user => {
-                const statusColor = user.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800';
+                const statusColor = user.status === 'Aktif' ? 'bg-green-400/20 text-green-300' : 'bg-red-400/20 text-red-300';
                 const actionButton = user.id !== currentUser.id
-                    ? `<button onclick="triggerResetPassword('${user.id}')" class="text-red-600 hover:text-red-800 font-medium">Reset Pass</button>`
+                    ? `<button onclick="triggerResetPassword('${user.id}')" class="text-red-400 hover:text-red-300 font-medium">Reset Pass</button>`
                     : `<span class="text-gray-400">Akun Anda</span>`;
 
                 html += `
-                    <tr>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.nama}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.userid}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.wa}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.jabatan}</td>
+                    <tr class="hover:bg-black/10">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">${user.nama}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.userid}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.wa}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.jabatan}</td>
                         <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${user.status}</span></td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">${actionButton}</td>
                     </tr>
@@ -1019,10 +1039,10 @@
         async function loadLogData() {
             const container = document.getElementById('log-content');
              if (currentUser.jabatan !== 'Admin') {
-                container.innerHTML = '<p class="text-red-500 font-semibold">Hanya Admin yang dapat melihat Log Aktivitas.</p>';
+                container.innerHTML = '<p class="text-red-400 font-semibold">Hanya Admin yang dapat melihat Log Aktivitas.</p>';
                 return;
             }
-            container.innerHTML = '<p class="text-gray-500">Memuat log aktivitas...</p>';
+            container.innerHTML = '<p class="text-gray-300">Memuat log aktivitas...</p>';
             
             showLoading(true);
             try {
@@ -1031,11 +1051,11 @@
                 if (data.status === 'success') {
                     renderLogList(container, data.log);
                 } else {
-                    container.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat log.'}</p>`;
+                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat log.'}</p>`;
                 }
             } catch (error) {
                 console.error('Load Log error:', error);
-                container.innerHTML = `<p class="text-red-500">Kesalahan jaringan: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
             }
@@ -1043,30 +1063,30 @@
 
         function renderLogList(container, logList) {
             if (!logList || logList.length === 0) {
-                container.innerHTML = '<p class="text-gray-500">Log masih kosong.</p>';
+                container.innerHTML = '<p class="text-gray-300">Log masih kosong.</p>';
                 return;
             }
 
             let html = `
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-white/20">
+                <thead class="bg-black/20">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Detail</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-white/20">
             `;
             
-            logList.slice().reverse().slice(0, 50).forEach(log => { // Show 50 newest logs
+            logList.slice().reverse().slice(0, 100).forEach(log => { // Show 100 newest logs
                 html += `
-                    <tr>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">${log.timestamp}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">${log.user}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-gray-900">${log.action}</td>
-                        <td class="px-4 py-2 text-xs text-gray-500 break-all">${log.detail}</td>
+                    <tr class="hover:bg-black/10">
+                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-400">${log.timestamp}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-400">${log.user}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-white">${log.action}</td>
+                        <td class="px-4 py-2 text-xs text-gray-400 break-all">${log.detail}</td>
                     </tr>
                 `;
             });
@@ -1077,7 +1097,7 @@
 
         async function loadArsipData() {
              const container = document.getElementById('arsip-list');
-             container.innerHTML = '<p class="text-gray-500">Memuat link folder arsip...</p>';
+             container.innerHTML = '<p class="text-gray-300">Memuat link folder arsip...</p>';
             
              showLoading(true);
              try {
@@ -1085,20 +1105,20 @@
                 
                  if (data.status === 'success' && data.link) {
                      container.innerHTML = `
-                         <p class="mb-4 text-gray-700">Akses semua file arsip Anda di Google Drive melalui link berikut:</p>
-                         <a href="${data.link}" target="_blank" class="text-blue-600 hover:text-blue-800 font-bold text-lg p-3 border rounded-lg bg-blue-50 inline-flex items-center space-x-2">
+                         <p class="mb-4 text-gray-200">Akses semua file arsip Anda di Google Drive melalui link berikut:</p>
+                         <a href="${data.link}" target="_blank" class="text-white hover:text-amber-300 font-bold text-lg p-4 border border-white/20 rounded-lg bg-black/20 inline-flex items-center space-x-2 transition-colors">
                              <i data-lucide="folder-open" class="w-6 h-6"></i>
                              <span>Buka Folder Arsip Google Drive</span>
                          </a>
-                         <p class="mt-4 text-sm text-gray-500 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
+                         <p class="mt-4 text-sm text-gray-400 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
                      `;
                      lucide.createIcons();
                  } else {
-                     container.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat link arsip. Pastikan GAS sudah di-deploy dan terotorisasi ke Drive.'}</p>`;
+                     container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat link arsip. Pastikan GAS sudah di-deploy dan terotorisasi ke Drive.'}</p>`;
                  }
              } catch (error) {
                  console.error('Load Arsip error:', error);
-                 container.innerHTML = `<p class="text-red-500">Kesalahan jaringan: ${error.message}</p>`;
+                 container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
              } finally {
                  showLoading(false);
              }
