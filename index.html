@@ -350,6 +350,22 @@
         </div>
     </div>
 
+    <!-- MODAL: Riwayat Surat -->
+    <div id="modal-riwayat" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-6 w-full max-w-2xl glass-card">
+            <h3 class="text-xl font-bold text-white">Riwayat Surat</h3>
+            <p id="riwayat-surat-nomor" class="text-sm text-amber-300 mb-6"></p>
+            
+            <div id="riwayat-timeline-container" class="mt-4 max-h-[60vh] overflow-y-auto pr-4">
+                <!-- Timeline will be rendered here by JS -->
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button onclick="document.getElementById('modal-riwayat').style.display='none'" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // *** PENTING: GANTI URL INI dengan URL Web App Google Apps Script Anda yang sudah di-deploy. ***
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
@@ -624,7 +640,6 @@
         }
 
         async function loadSuratData(jenis) {
-            // This page is now only for Admin TU to see the log of uploaded letters
             const listContainer = document.getElementById('surat-masuk-list');
             listContainer.innerHTML = '<p class="text-gray-200">Memuat data surat...</p>';
             showLoading(true);
@@ -672,6 +687,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.tanggal}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <a href="${surat.file_url}" target="_blank" class="text-amber-400 hover:text-amber-300 font-medium">Lihat File</a>
+                            <button onclick="openRiwayatModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-cyan-400 hover:text-cyan-300 font-medium ml-3">Riwayat</button>
                         </td>
                     </tr>
                 `;
@@ -680,7 +696,6 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
-
         
         // --- DISPOSISI LOGIC ---
         
@@ -824,6 +839,7 @@
                         </div>
                         <div class="mt-3 flex items-center space-x-4">
                             <a href="${d.file_url}" target="_blank" class="text-sm text-amber-400 hover:underline font-medium">Lihat File Surat</a>
+                            <button onclick="openRiwayatModal('${d.id_surat}', '${d.nomor_surat.replace(/'/g, "\\'")}')" class="text-sm text-cyan-400 hover:underline font-medium">Riwayat</button>
                             ${d.status_baca === 'Belum Dibaca' ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-amber-400 hover:underline font-medium">Tandai Dibaca</button>` : ''}
                             ${forwardButton}
                         </div>
@@ -854,7 +870,58 @@
                 showLoading(false);
             }
         }
+
+        // --- NEW HISTORY FUNCTIONS ---
+
+        async function openRiwayatModal(suratId, suratNomor) {
+            const modal = document.getElementById('modal-riwayat');
+            const container = document.getElementById('riwayat-timeline-container');
+            
+            document.getElementById('riwayat-surat-nomor').textContent = `No. Surat: ${suratNomor}`;
+            container.innerHTML = '<p class="text-gray-200">Memuat riwayat surat...</p>';
+            modal.style.display = 'flex';
+            
+            try {
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_history&suratId=${suratId}`);
+                if (data.status === 'success') {
+                    renderRiwayat(container, data.history);
+                } else {
+                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat riwayat.'}</p>`;
+                }
+            } catch (error) {
+                console.error('Load History error:', error);
+                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
+            }
+        }
+
+        function renderRiwayat(container, history) {
+            if (!history || history.length === 0) {
+                container.innerHTML = '<p class="text-gray-400">Tidak ada riwayat untuk surat ini.</p>';
+                return;
+            }
+
+            let html = '<div class="relative border-l-2 border-white/20 ml-3">';
+            
+            history.forEach((item) => {
+                html += `
+                    <div class="mb-8 ml-6">
+                        <span class="absolute flex items-center justify-center w-6 h-6 bg-amber-500 rounded-full -left-3 ring-4 ring-amber-900/50">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </span>
+                        <h3 class="flex items-center mb-1 text-lg font-semibold text-white">${item.actor}</h3>
+                        <time class="block mb-2 text-sm font-normal leading-none text-gray-400">${new Date(item.timestamp).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}</time>
+                        <p class="mb-2 text-base font-normal text-gray-200">${item.action}</p>
+                        <p class="text-sm font-italic text-gray-300 bg-black/20 p-2 rounded-md">Catatan: ${item.detail}</p>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
         
+        // --- OTHER FUNCTIONS (UNCHANGED) ---
         async function loadDashboardData() { /* Omitted for brevity */ }
         async function loadUserManagement() { /* Omitted for brevity */ }
         async function loadLogData() { /* Omitted for brevity */ }
