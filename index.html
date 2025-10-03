@@ -155,7 +155,7 @@
 
                         <!-- Notification/Surat List -->
                         <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-800">Surat Terbaru untuk Anda</h3>
+                            <h3 class="text-xl font-semibold mb-4 text-gray-800">Disposisi Terbaru untuk Anda</h3>
                             <div id="disposisi-list-dashboard">
                                 <p class="text-gray-500">Memuat data...</p>
                             </div>
@@ -182,7 +182,6 @@
                 <!-- Surat Keluar Page (Simplifikasi: Sama dengan Masuk, hanya label berbeda) -->
                 <div id="surat-keluar-page" class="page hidden">
                     <h2 class="text-3xl font-bold text-gray-800 mb-6">Surat Keluar</h2>
-                    <p class="text-gray-500 italic mb-6">Fitur pencatatan surat keluar (mirip dengan surat masuk).</p>
                     <button onclick="document.getElementById('modal-tambah-surat').style.display='flex';" class="mb-6 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-emerald-700 transition duration-150 flex items-center">
                         <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Keluar
                     </button>
@@ -265,8 +264,8 @@
                     <input type="text" id="surat-pengirim" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Upload File (PDF/DOCX)</label>
-                    <input type="file" id="surat-file" accept=".pdf,.doc,.docx" required class="mt-1 block w-full">
+                    <label class="block text-sm font-medium text-gray-700">Upload File (PDF/DOCX/JPG/PNG)</label>
+                    <input type="file" id="surat-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required class="mt-1 block w-full">
                 </div>
                 <div id="surat-form-message" class="text-sm text-red-500 mb-4"></div>
                 <div class="flex justify-end space-x-2">
@@ -314,37 +313,38 @@
     </div>
 
     <script>
-        // PASTIKAN Anda MENGGANTI URL ini dengan URL Web App Google Apps Script Anda yang sudah di-deploy.
+        // *** PENTING: GANTI URL INI dengan URL Web App Google Apps Script Anda yang sudah di-deploy. ***
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
         
         let currentUser = null;
-        let allUsers = []; // Daftar semua user untuk keperluan disposisi
-        let confirmCallback = null; // Callback untuk custom confirm
+        let allUsers = []; // Stores the list of all users for disposition purposes
+        let confirmCallback = null; // Callback for the custom confirm modal
 
-        // --- UTILITY FUNCTIONS (UPDATED) ---
-
-        /** Menampilkan pesan notifikasi */
+        // --- UTILITY FUNCTIONS ---
+        
+        /** Displays a notification message */
         function showMessage(elementId, message, isError = true) {
             const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.className = `text-sm mb-4 ${isError ? 'text-red-500' : 'text-green-600'}`;
-            if (!message) el.className = 'hidden';
+            if(el) {
+                el.textContent = message;
+                el.className = `text-sm mb-4 ${isError ? 'text-red-500' : 'text-green-600'}`;
+                if (!message) el.className += ' hidden';
+                else el.className = el.className.replace(' hidden', '');
+            }
         }
         
-        /** Menampilkan Alert Kustom (Pengganti alert() native) */
+        /** Shows a custom alert modal (replaces native alert()) */
         function showCustomAlert(message, title = 'Notifikasi') {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = title;
             document.getElementById('custom-modal-message').textContent = message;
             
             const actions = document.getElementById('custom-modal-actions');
-            actions.innerHTML = `
-                <button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">OK</button>
-            `;
+            actions.innerHTML = `<button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">OK</button>`;
             modal.style.display = 'flex';
         }
         
-        /** Menampilkan Confirm Kustom (Pengganti confirm() native) */
+        /** Shows a custom confirm modal (replaces native confirm()) */
         function showCustomConfirm(message, callback) {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = 'Konfirmasi Tindakan';
@@ -359,30 +359,65 @@
             
             document.getElementById('btn-cancel').onclick = () => {
                 modal.style.display = 'none';
-                confirmCallback(false);
+                if (confirmCallback) confirmCallback(false);
             };
             document.getElementById('btn-confirm').onclick = () => {
                 modal.style.display = 'none';
-                confirmCallback(true);
+                if (confirmCallback) confirmCallback(true);
             };
 
             modal.style.display = 'flex';
         }
 
 
-        /** Menampilkan overlay loading */
+        /** Shows or hides the loading overlay */
         function showLoading(show) {
             document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
         }
+        
+        /**
+         * A wrapper for the fetch API that includes retry logic with exponential backoff.
+         * This is crucial for handling intermittent network issues or temporary server errors.
+         * @param {string} url The URL to fetch.
+         * @param {object} options The fetch options (method, headers, body, etc.).
+         * @param {number} retries The number of retry attempts.
+         * @returns {Promise<object>} A promise that resolves with the JSON response.
+         */
+        async function fetchWithRetry(url, options = {}, retries = 3) {
+            let attempt = 0;
+            while (attempt < retries) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        // For non-network errors (e.g., 500, 404), don't retry, just throw.
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    // Handle cases where GAS returns HTML error pages instead of JSON
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                         console.error("Failed to parse JSON:", text);
+                         throw new Error("Received non-JSON response from server.");
+                    }
+                } catch (error) {
+                    attempt++;
+                    console.warn(`Fetch attempt ${attempt} failed: ${error.message}. Retrying...`);
+                    if (attempt >= retries) {
+                        throw error; // Throw the final error after all retries fail.
+                    }
+                    // Exponential backoff: wait 1s, then 2s, etc., before retrying.
+                    await new Promise(res => setTimeout(res, 1000 * attempt));
+                }
+            }
+        }
 
-        // --- Hashing functionality removed as requested. ---
 
         // --- AUTHENTICATION & ROUTING ---
 
-        /** Memeriksa status login saat aplikasi dimuat */
+        /** Checks login status when the app loads */
         function checkLoginStatus() {
             const userData = localStorage.getItem('currentUser');
-            // Ambil referensi elemen di awal
             const sidebarEl = document.getElementById('sidebar');
             const contentAreaEl = document.getElementById('content-area');
 
@@ -391,42 +426,34 @@
                 document.getElementById('user-display-name').textContent = currentUser.nama;
                 document.getElementById('user-display-jabatan').textContent = currentUser.jabatan;
                 
-                // Tampilkan struktur navigasi (Sidebar dan margin konten)
                 contentAreaEl.classList.add('md:ml-64');
                 sidebarEl.classList.remove('hidden');
 
-                // Jika sudah login, tentukan halaman awal
                 const initialHash = window.location.hash.substring(1) || 'dashboard';
                 showPage(initialHash);
             } else {
                 currentUser = null;
                 
-                // Sembunyikan Sidebar dan hilangkan margin konten (untuk tampilan login sentral)
                 contentAreaEl.classList.remove('md:ml-64');
                 sidebarEl.classList.add('hidden');
                 
-                // Tampilkan formulir login
                 showPage('login');
             }
-            // Inisialisasi Lucide icons
             lucide.createIcons(); 
         }
 
-        /** Menampilkan halaman berdasarkan hash/nama */
+        /** Displays a page based on its ID */
         function showPage(pageId) {
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(page => page.classList.add('hidden'));
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
 
             const targetPage = document.getElementById(pageId + '-page');
             if (targetPage) {
                 targetPage.classList.remove('hidden');
                 
-                // Set active link di sidebar
                 document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active-link'));
                 const activeLink = document.querySelector(`a[href="#${pageId}"]`);
                 if (activeLink) activeLink.classList.add('active-link');
 
-                // Load data untuk halaman yang ditampilkan
                 if (currentUser) {
                     window.location.hash = pageId;
                     switch (pageId) {
@@ -441,17 +468,16 @@
                 }
             } else if (pageId === 'login' || pageId === 'register') {
                 document.getElementById(pageId + '-page').classList.remove('hidden');
-                window.location.hash = ''; // Clear hash for login/register
-            } else {
-                 console.warn(`Page ID ${pageId} not found or unauthorized.`);
+                window.location.hash = '';
             }
         }
 
-        /** Logout user */
+        /** Logs out the user */
         function logout() {
             localStorage.removeItem('currentUser');
             currentUser = null;
-            showPage('login');
+            // A full reload ensures all states are cleared properly.
+            window.location.href = window.location.pathname;
         }
 
         // --- EVENT LISTENERS & HANDLERS ---
@@ -459,28 +485,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus();
 
-            // Toggle Sidebar for Mobile
             const sidebar = document.getElementById('sidebar');
             document.getElementById('menu-toggle').addEventListener('click', () => {
                 sidebar.classList.toggle('-translate-x-full');
             });
 
-            // Login Form Handler
             document.getElementById('login-form').addEventListener('submit', handleLogin);
-            
-            // Register Form Handler
             document.getElementById('register-form').addEventListener('submit', handleRegister);
-            
-            // Surat Form Handler
             document.getElementById('form-surat').addEventListener('submit', handleSuratSubmit);
-
-            // Disposisi Form Handler
             document.getElementById('form-disposisi').addEventListener('submit', handleDisposisiSubmit);
             
-            // Change label on surat form based on type
             document.getElementById('surat-jenis').addEventListener('change', (e) => {
-                const label = document.getElementById('label-pengirim');
-                label.textContent = e.target.value === 'Masuk' ? 'Pengirim' : 'Penerima';
+                document.getElementById('label-pengirim').textContent = e.target.value === 'Masuk' ? 'Pengirim' : 'Penerima';
             });
         });
 
@@ -492,36 +508,27 @@
             const wa = document.getElementById('login-wa').value.trim();
             const password = document.getElementById('login-password').value.trim();
             
-            if (!GAS_API_URL || GAS_API_URL === 'GANTI_DENGAN_URL_WEB_APP_GAS_ANDA_DI_SINI') {
+            if (!GAS_API_URL.startsWith('https://')) {
                 showCustomAlert('ERROR: Harap ganti variabel GAS_API_URL dengan URL Web App Anda di kode HTML.', 'Kesalahan Konfigurasi');
                 return;
             }
 
             showLoading(true);
             try {
-                // Menggunakan GET dengan plain password
+                // Using GET with plain password as per the backend script's design
                 const url = `${GAS_API_URL}?action=login&wa=${encodeURIComponent(wa)}&password=${encodeURIComponent(password)}`;
                 
                 const data = await fetchWithRetry(url, { method: 'GET' });
 
                 if (data.status === 'success') {
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    currentUser = data.user;
-                    showMessage('login-error-message', '', false);
                     checkLoginStatus(); // Re-initialize app state
                 } else {
                     showMessage('login-error-message', data.message || 'Login gagal. Cek nomor WA/Password.', true);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                let errorMessage = 'Terjadi kesalahan jaringan/server: ' + error.message;
-
-                // --- Peningkatan Panduan Error ---
-                if (error.message.includes('Failed to fetch')) {
-                    errorMessage += '. (Kesalahan Jaringan/CORS). Pastikan URL GAS Anda benar dan Web App di-*deploy* ulang dengan akses "Anyone".';
-                }
-                // --- End Peningkatan Panduan Error ---
-                
+                let errorMessage = 'Terjadi kesalahan jaringan atau server. Pastikan URL GAS benar dan Web App di-deploy ulang dengan akses "Anyone".';
                 showMessage('login-error-message', errorMessage, true);
             } finally {
                 showLoading(false);
@@ -535,8 +542,16 @@
 
             showLoading(true);
             try {
-                // Menggunakan GET dengan plain password
-                const url = `${GAS_API_URL}?action=register&nama=${encodeURIComponent(form['reg-nama'].value.trim())}&wa=${encodeURIComponent(form['reg-wa'].value.trim())}&email=${encodeURIComponent(form['reg-email'].value.trim())}&jabatan=${encodeURIComponent(form['reg-jabatan'].value.trim())}&password=${encodeURIComponent(password)}`;
+                // Using GET with plain password
+                const params = new URLSearchParams({
+                    action: 'register',
+                    nama: form['reg-nama'].value.trim(),
+                    wa: form['reg-wa'].value.trim(),
+                    email: form['reg-email'].value.trim(),
+                    jabatan: form['reg-jabatan'].value.trim(),
+                    password: password
+                });
+                const url = `${GAS_API_URL}?${params.toString()}`;
 
                 const result = await fetchWithRetry(url, { method: 'GET' });
 
@@ -549,14 +564,7 @@
                 }
             } catch (error) {
                 console.error('Register error:', error);
-                let errorMessage = 'Terjadi kesalahan jaringan/server: ' + error.message;
-
-                // --- Peningkatan Panduan Error ---
-                if (error.message.includes('Failed to fetch')) {
-                    errorMessage += '. (Kesalahan Jaringan/CORS). Pastikan URL GAS Anda benar dan Web App di-*deploy* ulang dengan akses "Anyone".';
-                }
-                // --- End Peningkatan Panduan Error ---
-                
+                let errorMessage = 'Terjadi kesalahan jaringan atau server. Pastikan URL GAS benar dan Web App di-deploy ulang dengan akses "Anyone".';
                 showMessage('register-error-message', errorMessage, true);
             } finally {
                 showLoading(false);
@@ -579,9 +587,9 @@
 
             reader.onload = async function(event) {
                 showLoading(true);
-                const base64File = event.target.result.split(',')[1]; // Ambil data base64 saja
+                const base64File = event.target.result.split(',')[1];
 
-                const data = {
+                const payload = {
                     action: 'input_surat',
                     jenis: form['surat-jenis'].value,
                     nomor: form['surat-nomor'].value.trim(),
@@ -595,29 +603,23 @@
                 };
 
                 try {
-                    // Semua API selain login/register menggunakan POST dengan JSON body
+                    // All API calls other than login/register use POST with a JSON body
                     const result = await fetchWithRetry(GAS_API_URL, {
                         method: 'POST',
-                        body: JSON.stringify(data),
-                        headers: { 'Content-Type': 'application/json' }
+                        body: JSON.stringify(payload),
                     });
 
                     if (result.status === 'success') {
                         showCustomAlert('Surat berhasil disimpan dan diarsip!', 'Berhasil');
                         form.reset();
-                        loadSuratData(data.jenis); // Refresh list
                         document.getElementById('modal-tambah-surat').style.display='none';
+                        loadSuratData(payload.jenis); // Refresh list
                     } else {
                         showMessage('surat-form-message', result.message || 'Gagal menyimpan surat.', true);
                     }
                 } catch (error) {
                     console.error('Surat submit error:', error);
-                    let errorMessage = 'Terjadi kesalahan jaringan/server: ' + error.message;
-
-                    if (error.message.includes('Failed to fetch')) {
-                        errorMessage += '. (Kesalahan Jaringan/CORS). Pastikan URL GAS Anda benar dan Web App di-*deploy* ulang dengan akses "Anyone".';
-                    }
-                    
+                    let errorMessage = 'Terjadi kesalahan jaringan atau server.';
                     showMessage('surat-form-message', errorMessage, true);
                 } finally {
                     showLoading(false);
@@ -634,10 +636,10 @@
             
             showLoading(true);
             try {
-                const data = await fetchWithRetry(GAS_API_URL + `?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}`, { method: 'GET' });
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
-                    allUsers = data.users || []; // Simpan daftar user
+                    allUsers = data.users || []; // Store the user list
                     renderSuratList(listContainer, data.surat, jenis);
                 } else {
                     listContainer.innerHTML = `<p class="text-red-500">${data.message || 'Gagal memuat data surat.'}</p>`;
@@ -651,7 +653,7 @@
         }
         
         function renderSuratList(container, suratList, jenis) {
-            if (suratList.length === 0) {
+            if (!suratList || suratList.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">Belum ada data surat.</p>';
                 return;
             }
@@ -675,7 +677,7 @@
                 const statusColor = surat.status === 'Belum Disposisi' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800';
                 
                 const disposisiButton = (currentUser.jabatan === 'Pimpinan' || currentUser.jabatan === 'Admin') && jenis === 'Masuk'
-                    ? `<button onclick="openDisposisiModal('${surat.id}', '${surat.nomor_surat}')" class="text-blue-600 hover:text-blue-800 font-medium ml-3">Disposisi</button>`
+                    ? `<button onclick="openDisposisiModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 font-medium ml-3">Disposisi</button>`
                     : '';
                     
                 html += `
@@ -685,9 +687,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${surat.pengirim_penerima}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${surat.tanggal}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
-                                ${surat.status}
-                            </span>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${surat.status}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <a href="${surat.file_url}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-medium">Lihat File</a>
@@ -710,11 +710,8 @@
             const select = document.getElementById('dispo-penerima');
             select.innerHTML = '<option value="">Pilih Penerima</option>';
             
-            allUsers.filter(u => u.id !== currentUser.id).forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.nama} (${user.jabatan})`;
-                select.appendChild(option);
+            allUsers.filter(u => u.id !== currentUser.id && u.status === 'Aktif').forEach(user => {
+                select.innerHTML += `<option value="${user.id}">${user.nama} (${user.jabatan})</option>`;
             });
             
             document.getElementById('modal-disposisi').style.display='flex';
@@ -734,7 +731,7 @@
 
             showLoading(true);
             try {
-                const data = {
+                const payload = {
                     action: 'disposisi_surat',
                     id_surat: suratId,
                     dari_user_id: currentUser.id,
@@ -744,26 +741,20 @@
 
                 const result = await fetchWithRetry(GAS_API_URL, {
                     method: 'POST',
-                    body: JSON.stringify(data),
-                    headers: { 'Content-Type': 'application/json' }
+                    body: JSON.stringify(payload)
                 });
 
                 if (result.status === 'success') {
                     showCustomAlert('Disposisi berhasil dikirim. Notifikasi WA/Telegram sedang diproses.', 'Berhasil');
                     document.getElementById('form-disposisi').reset();
-                    loadSuratData('Masuk'); // Refresh list surat masuk
-                    setTimeout(() => document.getElementById('modal-disposisi').style.display='none', 2000);
+                    document.getElementById('modal-disposisi').style.display='none';
+                    loadSuratData('Masuk');
                 } else {
                     showMessage('dispo-form-message', result.message || 'Gagal mengirim disposisi.', true);
                 }
             } catch (error) {
                 console.error('Disposisi submit error:', error);
-                let errorMessage = 'Terjadi kesalahan jaringan/server: ' + error.message;
-
-                if (error.message.includes('Failed to fetch')) {
-                    errorMessage += '. (Kesalahan Jaringan/CORS). Pastikan URL GAS Anda benar dan Web App di-*deploy* ulang dengan akses "Anyone".';
-                }
-                showMessage('dispo-form-message', errorMessage, true);
+                showMessage('dispo-form-message', 'Terjadi kesalahan jaringan atau server.', true);
             } finally {
                 showLoading(false);
             }
@@ -775,7 +766,7 @@
             
             showLoading(true);
             try {
-                const data = await fetchWithRetry(GAS_API_URL + `?action=get_my_disposisi&userId=${currentUser.id}`, { method: 'GET' });
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
                     renderMyDisposisiList(container, data.disposisi);
@@ -791,74 +782,62 @@
         }
 
         function renderMyDisposisiList(container, disposisiList) {
-            if (disposisiList.length === 0) {
+             if (!disposisiList || disposisiList.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">Tidak ada disposisi baru untuk Anda.</p>';
                 return;
             }
 
             let html = `
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Disposisi</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nomor Surat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dari</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Baca</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Tindak Lanjut</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+            <div class="space-y-4">
             `;
             
             disposisiList.forEach(d => {
-                const statusBacaColor = d.status_baca === 'Belum Dibaca' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
-                const statusTLColor = d.status_tindak_lanjut === 'Belum Diproses' ? 'bg-yellow-100 text-yellow-800' : (d.status_tindak_lanjut === 'Diproses' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800');
+                const statusBacaColor = d.status_baca === 'Belum Dibaca' ? 'text-red-600' : 'text-green-600';
+                const statusTLColor = d.status_tindak_lanjut === 'Belum Diproses' ? 'text-yellow-600' : (d.status_tindak_lanjut === 'Diproses' ? 'text-blue-600' : 'text-emerald-600');
                 
                 const markReadButton = d.status_baca === 'Belum Dibaca'
-                    ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-xs text-blue-600 hover:text-blue-800 font-medium mr-2">Tandai Dibaca</button>`
+                    ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-blue-600 hover:underline font-medium">Tandai Dibaca</button>`
                     : '';
                 
-                const markTLButton = d.status_tindak_lanjut !== 'Selesai'
-                    ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-xs border rounded p-1">
+                const markTLSelect = d.status_tindak_lanjut !== 'Selesai'
+                    ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-sm border rounded p-1">
                         <option value="Belum Diproses" ${d.status_tindak_lanjut === 'Belum Diproses' ? 'selected' : ''}>Belum Diproses</option>
                         <option value="Diproses" ${d.status_tindak_lanjut === 'Diproses' ? 'selected' : ''}>Diproses</option>
                         <option value="Selesai" ${d.status_tindak_lanjut === 'Selesai' ? 'selected' : ''}>Selesai</option>
                        </select>`
-                    : `<span class="text-xs text-emerald-600">Selesai</span>`;
+                    : `<span class="text-sm font-semibold ${statusTLColor}">Selesai</span>`;
 
                 html += `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.tanggal_disposisi}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${d.nomor_surat}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.dari_user_nama}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBacaColor}">
-                                ${d.status_baca}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusTLColor}">
-                                ${d.status_tindak_lanjut}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-medium">
-                            <a href="${d.file_url}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-medium">Lihat File</a>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 ${d.status_baca === 'Belum Dibaca' ? 'border-red-500' : 'border-gray-300'}">
+                        <div class="flex justify-between items-start">
+                             <div>
+                                <p class="font-bold text-gray-800">${d.nomor_surat}</p>
+                                <p class="text-sm text-gray-600">${d.perihal}</p>
+                                <p class="text-xs text-gray-500 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
+                            </div>
+                            <div class="flex-shrink-0 ml-4">
+                                ${markTLSelect}
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm text-gray-700"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
+                        </div>
+                        <div class="mt-3 flex items-center space-x-4">
+                            <a href="${d.file_url}" target="_blank" class="text-sm text-emerald-600 hover:underline font-medium">Lihat File Surat</a>
                             ${markReadButton}
-                            ${markTLButton}
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
                 `;
             });
             
-            html += `</tbody></table>`;
+            html += `</div>`;
             container.innerHTML = html;
         }
 
         async function updateDisposisiStatus(disposisiId, statusType, value = null) {
             showLoading(true);
             try {
-                const data = {
+                const payload = {
                     action: 'update_disposisi_status',
                     id: disposisiId,
                     statusType: statusType, // 'baca' or 'tindak_lanjut'
@@ -868,12 +847,11 @@
 
                 const result = await fetchWithRetry(GAS_API_URL, {
                     method: 'POST',
-                    body: JSON.stringify(data),
-                    headers: { 'Content-Type': 'application/json' }
+                    body: JSON.stringify(payload)
                 });
 
                 if (result.status === 'success') {
-                    // Refresh list and stats without alert
+                    // Refresh lists without showing an alert
                     loadMyDisposisi(); 
                     loadDashboardData(); 
                 } else {
@@ -892,23 +870,22 @@
         async function loadDashboardData() {
             showLoading(true);
             try {
-                const data = await fetchWithRetry(GAS_API_URL + `?action=get_dashboard_data&userId=${currentUser.id}`, { method: 'GET' });
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_dashboard_data&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
                     document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
                     document.getElementById('stat-undisposed').textContent = data.stats.belumDidisposisi || 0;
                     document.getElementById('stat-unfollowed').textContent = data.stats.belumDitindaklanjuti || 0;
 
-                    // Render latest disposisi/notifications
                     const container = document.getElementById('disposisi-list-dashboard');
                     if (data.latestDisposisi && data.latestDisposisi.length > 0) {
                          let html = '';
                          data.latestDisposisi.slice(0, 5).forEach(d => {
                             html += `
                                 <div class="p-3 border-b hover:bg-gray-50 rounded-lg">
-                                    <p class="font-semibold text-gray-800">${d.nomor_surat} - ${d.perihal}</p>
-                                    <p class="text-sm text-gray-600">Disposisi dari ${d.dari_user_nama} pada ${d.tanggal_disposisi}. 
-                                    Status: <span class="text-red-500">${d.status_baca}</span>, Tindak Lanjut: <span class="text-yellow-700">${d.status_tindak_lanjut}</span></p>
+                                    <p class="font-semibold text-gray-800">${d.perihal}</p>
+                                    <p class="text-sm text-gray-600">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
+                                    Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-600' : 'text-green-600'}">${d.status_baca}</span></p>
                                 </div>
                             `;
                          });
@@ -926,11 +903,15 @@
 
         async function loadUserManagement() {
             const container = document.getElementById('user-management-content');
+            if (currentUser.jabatan !== 'Admin') {
+                container.innerHTML = '<p class="text-red-500 font-semibold">Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
+                return;
+            }
+
             container.innerHTML = '<p class="text-gray-500">Memuat daftar user...</p>';
-            
             showLoading(true);
             try {
-                const data = await fetchWithRetry(GAS_API_URL + `?action=get_users&userId=${currentUser.id}`, { method: 'GET' });
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
                     renderUserList(container, data.users);
@@ -946,13 +927,8 @@
         }
         
         function renderUserList(container, userList) {
-            if (currentUser.jabatan !== 'Admin') {
-                container.innerHTML = '<p class="text-red-500 font-semibold">Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
-                return;
-            }
-            
             let html = `
-            <p class="text-sm text-gray-600 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123' (plain text).</p>
+            <p class="text-sm text-gray-600 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -977,14 +953,8 @@
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.nama}</td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.wa}</td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.jabatan}</td>
-                        <td class="px-4 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
-                                ${user.status}
-                            </span>
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                            ${actionButton}
-                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${user.status}</span></td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">${actionButton}</td>
                     </tr>
                 `;
             });
@@ -993,7 +963,6 @@
             container.innerHTML = html;
         }
 
-        // Wrapper function to use custom confirm
         function triggerResetPassword(userId) {
             showCustomConfirm('Yakin ingin mereset password user ini menjadi "password123"? Tindakan ini tidak dapat dibatalkan.', (confirmed) => {
                 if (confirmed) {
@@ -1003,11 +972,9 @@
         }
 
         async function resetUserPassword(userId) {
-            // Confirmation handled by triggerResetPassword
-            
             showLoading(true);
             try {
-                const data = {
+                const payload = {
                     action: 'reset_password',
                     targetUserId: userId,
                     adminUserId: currentUser.id
@@ -1015,8 +982,7 @@
 
                 const result = await fetchWithRetry(GAS_API_URL, {
                     method: 'POST',
-                    body: JSON.stringify(data),
-                    headers: { 'Content-Type': 'application/json' }
+                    body: JSON.stringify(payload)
                 });
 
                 if (result.status === 'success') {
@@ -1033,33 +999,27 @@
             }
         }
         
-        // Basic filter function for search boxes
         function filterSurat(listId, query) {
             const rows = document.getElementById(listId).querySelectorAll('tbody tr');
             const lowerCaseQuery = query.toLowerCase();
 
             rows.forEach(row => {
                 const searchData = row.getAttribute('data-search').toLowerCase();
-                if (searchData.includes(lowerCaseQuery)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = searchData.includes(lowerCaseQuery) ? '' : 'none';
             });
         }
         
         async function loadLogData() {
             const container = document.getElementById('log-content');
-            container.innerHTML = '<p class="text-gray-500">Memuat log aktivitas...</p>';
-
-            if (currentUser.jabatan !== 'Admin') {
+             if (currentUser.jabatan !== 'Admin') {
                 container.innerHTML = '<p class="text-red-500 font-semibold">Hanya Admin yang dapat melihat Log Aktivitas.</p>';
                 return;
             }
+            container.innerHTML = '<p class="text-gray-500">Memuat log aktivitas...</p>';
             
             showLoading(true);
             try {
-                const data = await fetchWithRetry(GAS_API_URL + `?action=get_log&userId=${currentUser.id}`, { method: 'GET' });
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_log&userId=${currentUser.id}`);
                 
                 if (data.status === 'success') {
                     renderLogList(container, data.log);
@@ -1075,7 +1035,7 @@
         }
 
         function renderLogList(container, logList) {
-            if (logList.length === 0) {
+            if (!logList || logList.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">Log masih kosong.</p>';
                 return;
             }
@@ -1093,13 +1053,13 @@
                 <tbody class="bg-white divide-y divide-gray-200">
             `;
             
-            logList.slice(-20).reverse().forEach(log => { // Tampilkan 20 log terbaru
+            logList.slice().reverse().slice(0, 50).forEach(log => { // Show 50 newest logs
                 html += `
                     <tr>
                         <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">${log.timestamp}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">${log.user}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-gray-900">${log.action}</td>
-                        <td class="px-4 py-2 text-xs text-gray-500">${log.detail}</td>
+                        <td class="px-4 py-2 text-xs text-gray-500 break-all">${log.detail}</td>
                     </tr>
                 `;
             });
@@ -1114,7 +1074,7 @@
             
              showLoading(true);
              try {
-                 const data = await fetchWithRetry(GAS_API_URL + `?action=get_arsip_link&userId=${currentUser.id}`, { method: 'GET' });
+                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_arsip_link&userId=${currentUser.id}`);
                 
                  if (data.status === 'success' && data.link) {
                      container.innerHTML = `
@@ -1123,7 +1083,7 @@
                              <i data-lucide="folder-open" class="w-6 h-6"></i>
                              <span>Buka Folder Arsip Google Drive</span>
                          </a>
-                         <p class="mt-4 text-sm text-gray-500 italic">Catatan: Pastikan Anda login dengan akun Google yang sama dengan akun yang digunakan untuk deploy GAS.</p>
+                         <p class="mt-4 text-sm text-gray-500 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
                      `;
                      lucide.createIcons();
                  } else {
