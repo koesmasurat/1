@@ -1,1142 +1,566 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Surat RSUD dr. R. Koesma</title>
-    <link rel="icon" type="image/png" href="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true">
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root { 
-            --main-color: #f59e0b; /* Amber 500 */ 
-            --main-color-light: #fcd34d; /* Amber 300 */
+/**
+ * SIMAS RSUD dr. R. Koesma - Backend Google Apps Script (V2 - Multi-level)
+ *
+ * This script acts as a Web App API to connect the HTML frontend
+ * with Google Sheets (Database) and Google Drive (File Archive).
+ * Implements a 5-level disposition hierarchy.
+ */
+
+const SCRIPT_TITLE = "SIMAS RSUD dr. R. Koesma";
+const SHEET_ID = '1VMicXg9K7mkEb1Dn42YJyW4uiuRArwKXkG1GPKM6YR8'; // Ganti dengan ID Google Sheet Anda
+const ROOT_FOLDER_NAME = 'ARSIP_SURAT_RSUD';
+
+/** Sheet Names and their Columns (V2 Structure) */
+const SHEET_CONFIG = {
+    Setting: ['key', 'value'],
+    Log: ['timestamp', 'user', 'action', 'detail'],
+    User: ['id', 'userid', 'nama', 'wa', 'email', 'jabatan', 'level', 'password_hash', 'status'], // ADDED: level
+    Surat: ['id', 'jenis', 'nomor_surat', 'perihal', 'tanggal', 'pengirim_penerima', 'file_url', 'status'], 
+    Disposisi: ['id', 'id_surat', 'dari_user_id', 'ke_user_id', 'catatan', 'tanggal_disposisi', 'status_baca', 'status_tindak_lanjut', 'parent_disposisi_id', 'batch_id'] // ADDED: parent_disposisi_id, batch_id
+};
+
+// --- CORE WEB APP FUNCTIONS ---
+
+function doPost(e) {
+    let result = { status: 'error', message: 'Unknown request.' };
+    
+    try {
+        const db = openDatabase();
+        let data = JSON.parse(e.postData.contents);
+
+        logActivity(db, 'SYSTEM', 'POST Request', JSON.stringify({ action: data.action, userId: data.userId || 'N/A' }));
+
+        switch (data.action) {
+            case 'login':
+                result = handleLogin(db, data);
+                break;
+            case 'register':
+                result = handleRegistration(db, data);
+                break;
+            case 'input_surat':
+                result = handleSuratInput(db, data);
+                break;
+            case 'disposisi_surat':
+                result = handleDisposisi(db, data);
+                break;
+            case 'update_disposisi_status':
+                result = updateDisposisiStatus(db, data);
+                break;
+            case 'reset_password':
+                result = handlePasswordReset(db, data);
+                break;
+            default:
+                result.message = 'Action not recognized.';
         }
-        
-        /* Custom scrollbar for a more modern look */
-        ::-webkit-scrollbar {
-            width: 8px;
+    } catch (error) {
+        result.message = 'Server Error: ' + error.toString();
+        logActivity(openDatabase(), 'SYSTEM', 'Error', result.message + " | Stack: " + error.stack);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+    let result = { status: 'error', message: 'Unknown request.' };
+
+    try {
+        const db = openDatabase();
+        const params = e.parameter;
+        const userId = params.userId || 'GUEST';
+
+        logActivity(db, userId, 'GET Request', params.action);
+
+        switch (params.action) {
+            case 'get_surat_list':
+                result = getSuratList(db, params.jenis);
+                break;
+            case 'get_dashboard_data':
+                result = getDashboardData(db, userId);
+                break;
+            case 'get_my_disposisi':
+                result = getMyDisposisi(db, userId);
+                break;
+            case 'get_users':
+                result = getAllUsers(db, userId);
+                break;
+            case 'get_log':
+                result = getLogData(db, userId);
+                break;
+            case 'get_arsip_link':
+                result = getArsipLink(userId);
+                break;
+            default:
+                result.message = 'GET Action not recognized.';
         }
-        ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.1);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.3);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.5);
-        }
+    } catch (error) {
+        result.message = 'Server Error: ' + error.toString();
+        logActivity(openDatabase(), 'SYSTEM', 'Error', result.message + " | Stack: " + error.stack);
+    }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-image: url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2670&auto=format&fit=crop');
-            background-size: cover;
-            background-attachment: fixed;
-            background-position: center;
-        }
-        .active-link { 
-            border-left: 4px solid var(--main-color-light); 
-            background-color: rgba(255, 255, 255, 0.15); 
-            font-weight: 600; 
-            color: white;
-        }
-        
-        .glass-card {
-            background: rgba(20, 10, 0, 0.6); /* Darker glass for better contrast */
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-        }
+    return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+}
 
-        .form-input {
-            background: rgba(0,0,0,0.2) !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
-            color: white !important;
-        }
-        .form-input::placeholder {
-            color: rgba(255,255,255,0.5) !important;
-        }
-        /* Style for date input icon */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+// --- DATABASE & INITIALIZATION FUNCTIONS ---
 
-        .loading-overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0, 0, 0, 0.5); 
-            backdrop-filter: blur(10px);
-            z-index: 50; justify-content: center; align-items: center; 
-        }
-        .modal { display: none; }
-    </style>
-</head>
-<body class="min-h-screen">
+function openDatabase() {
+    return SpreadsheetApp.openById(SHEET_ID);
+}
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay">
-        <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-    </div>
-
-    <!-- Main App Container -->
-    <div id="app" class="flex">
-        <!-- Sidebar -->
-        <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-64 glass-card z-40 m-2 rounded-2xl flex-shrink-0">
-            <div class="p-6 border-b border-white/20 text-center">
-                <img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-16 h-16 mx-auto mb-2">
-                <h1 class="text-xl font-bold text-white">SIMAS RSUD</h1>
-                <p class="text-sm text-gray-200">dr. R. Koesma</p>
-            </div>
-            <nav class="mt-6">
-                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
-                </a>
-                <a href="#surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="mail-check" class="w-5 h-5"></i><span>Surat Masuk</span>
-                </a>
-                <a href="#surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="send" class="w-5 h-5"></i><span>Surat Keluar</span>
-                </a>
-                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="layers-3" class="w-5 h-5"></i><span>Disposisi Saya</span>
-                </a>
-                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span>
-                </a>
-                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
-                </a>
-                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>
-                </a>
-            </nav>
-            <div class="absolute bottom-0 p-6 w-full border-t border-white/20">
-                <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-400 hover:text-red-300 transition duration-150">
-                    <i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Content Area -->
-        <div id="content-area" class="flex-1 transition-all duration-300 p-2 md:p-4 min-w-0">
-            <button id="menu-toggle" class="md:hidden p-2 rounded-full glass-card mb-4 fixed top-4 right-4 z-50">
-                <i data-lucide="menu" class="w-6 h-6 text-white"></i>
-            </button>
-
-            <!-- Pages Container -->
-            <div id="pages-container">
-                <!-- Login Page -->
-                <div id="login-page" class="page max-w-md mx-auto mt-20 p-8 glass-card">
-                    <h2 class="text-2xl font-bold mb-6 text-center text-white">Login SIMAS RSUD</h2>
-                    <p class="text-sm text-center text-red-400 mb-4" id="login-error-message"></p>
-                    <form id="login-form">
-                        <div class="mb-4">
-                            <label for="login-userid" class="block text-sm font-medium text-gray-200">User ID</label>
-                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input" placeholder="Masukkan User ID Anda">
-                        </div>
-                        <div class="mb-6">
-                            <label for="login-password" class="block text-sm font-medium text-gray-200">Password</label>
-                            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input">
-                        </div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition duration-150">
-                            Masuk
-                        </button>
-                    </form>
-                    <p class="mt-4 text-center text-sm text-gray-300">
-                        Belum punya akun? <a href="#" onclick="showPage('register')" class="font-medium text-amber-400 hover:text-amber-300">Daftar Sekarang</a>
-                    </p>
-                </div>
-                
-                <!-- Register Page -->
-                <div id="register-page" class="page max-w-lg mx-auto mt-10 p-8 glass-card hidden">
-                    <h2 class="text-2xl font-bold mb-6 text-center text-white">Pendaftaran Akun Baru</h2>
-                    <p class="text-sm text-center text-red-400 mb-4" id="register-error-message"></p>
-                    <form id="register-form">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="reg-userid" class="block text-sm font-medium text-gray-200">User ID (untuk login)</label>
-                                <input type="text" id="reg-userid" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label for="reg-nama" class="block text-sm font-medium text-gray-200">Nama Lengkap</label>
-                                <input type="text" id="reg-nama" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label for="reg-wa" class="block text-sm font-medium text-gray-200">Nomor WA</label>
-                                <input type="text" id="reg-wa" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm" placeholder="6281xxxx">
-                            </div>
-                             <div>
-                                <label for="reg-jabatan" class="block text-sm font-medium text-gray-200">Jabatan</label>
-                                <input type="text" id="reg-jabatan" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="reg-email" class="block text-sm font-medium text-gray-200">Email (Opsional)</label>
-                                <input type="email" id="reg-email" class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <label for="reg-password" class="block text-sm font-medium text-gray-200">Password</label>
-                            <input type="password" id="reg-password" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
-                        </div>
-                        <button type="submit" class="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700">
-                            Daftar
-                        </button>
-                    </form>
-                    <p class="mt-4 text-center text-sm text-gray-300">
-                        Sudah punya akun? <a href="#" onclick="showPage('login')" class="font-medium text-amber-400 hover:text-amber-300">Login</a>
-                    </p>
-                </div>
-
-                <!-- Dashboard Page -->
-                <div id="dashboard-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-2">Dashboard</h2>
-                    <p class="text-md text-gray-200 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
-                    <div id="dashboard-content">
-                        <!-- Stats Cards -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="p-6 glass-card border-t-4 border-sky-400">
-                                <p class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
-                            </div>
-                            <div class="p-6 glass-card border-t-4 border-amber-400">
-                                <p class="text-sm font-medium text-gray-200">Surat Belum Didisposisi</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-undisposed">0</p>
-                            </div>
-                            <div class="p-6 glass-card border-t-4 border-rose-500">
-                                <p class="text-sm font-medium text-gray-200">Surat Belum Ditindaklanjuti</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-unfollowed">0</p>
-                            </div>
-                        </div>
-
-                        <!-- Disposisi List -->
-                        <div class="p-6 glass-card">
-                            <h3 class="text-xl font-semibold mb-4">Disposisi Terbaru untuk Anda</h3>
-                            <div id="disposisi-list-dashboard">
-                                <p class="text-gray-200">Memuat data...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Surat Masuk Page -->
-                <div id="surat-masuk-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Surat Masuk</h2>
-                    <button onclick="openTambahSuratModal()" class="mb-6 bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
-                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Masuk
-                    </button>
-                    <div class="p-6 glass-card">
-                        <div class="mb-4">
-                            <input type="text" id="search-surat" onkeyup="filterSurat('surat-masuk-list', this.value)" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 form-input rounded-md">
-                        </div>
-                        <div id="surat-masuk-list" class="overflow-x-auto">
-                            <p class="text-gray-200">Data surat masuk akan dimuat di sini...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Surat Keluar Page -->
-                <div id="surat-keluar-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Surat Keluar</h2>
-                    <button onclick="openTambahSuratModal()" class="mb-6 bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
-                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Keluar
-                    </button>
-                    <div class="p-6 glass-card">
-                        <div class="mb-4">
-                            <input type="text" id="search-surat-keluar" onkeyup="filterSurat('surat-keluar-list', this.value)" placeholder="Cari: Nomor/Perihal/Penerima" class="w-full px-3 py-2 form-input rounded-md">
-                        </div>
-                        <div id="surat-keluar-list" class="overflow-x-auto">
-                            <p class="text-gray-200">Data surat keluar akan dimuat di sini...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Disposisi Saya Page -->
-                <div id="disposisi-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Disposisi Saya</h2>
-                    <div class="p-6 glass-card">
-                        <div id="my-disposisi-list" class="overflow-x-auto">
-                            <p class="text-gray-200">Daftar disposisi untuk Anda akan dimuat di sini...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Arsip Page -->
-                <div id="arsip-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Arsip Dokumen</h2>
-                    <p class="text-gray-200 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
-                    <div class="p-6 glass-card">
-                        <div id="arsip-list">
-                            <p class="text-gray-200">Data arsip akan dimuat di sini...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- User Management Page -->
-                <div id="users-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Manajemen User</h2>
-                    <div id="user-management-content" class="p-6 glass-card">
-                        <p class="text-gray-200">Daftar pengguna akan dimuat di sini...</p>
-                    </div>
-                </div>
-
-                <!-- Log Page -->
-                <div id="log-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Log Aktivitas</h2>
-                    <div id="log-content" class="p-6 glass-card">
-                        <p class="text-gray-200">Log sistem akan dimuat di sini...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Tambah Surat -->
-    <div id="modal-tambah-surat" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
-        <div class="relative p-5 w-full max-w-2xl glass-card">
-            <h3 class="text-xl font-bold mb-4 text-white">Input Surat</h3>
-            <form id="form-surat">
-                <div class="mb-4 text-white">
-                    <label class="block text-sm font-medium text-gray-200">Jenis Surat</label>
-                    <select id="surat-jenis" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                        <option value="Masuk">Surat Masuk</option>
-                        <option value="Keluar">Surat Keluar</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Nomor Surat</label>
-                    <input type="text" id="surat-nomor" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Perihal</label>
-                    <input type="text" id="surat-perihal" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Tanggal Surat</label>
-                    <input type="date" id="surat-tanggal" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200" id="label-pengirim">Pengirim</label>
-                    <input type="text" id="surat-pengirim" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Upload File (PDF/DOCX/JPG/PNG)</label>
-                    <input type="file" id="surat-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required class="mt-1 block w-full text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
-                </div>
-                <div id="surat-form-message" class="text-sm text-red-400 mb-4"></div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="document.getElementById('modal-tambah-surat').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Simpan Surat</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL: Disposisi -->
-    <div id="modal-disposisi" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
-        <div class="relative p-5 w-full max-w-xl glass-card">
-            <h3 class="text-xl font-bold mb-4 text-white">Disposisi Surat: <span id="dispo-surat-nomor" class="text-amber-300"></span></h3>
-            <form id="form-disposisi">
-                <input type="hidden" id="dispo-surat-id">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Pilih Penerima Disposisi</label>
-                    <select id="dispo-penerima" required class="mt-1 block w-full px-3 py-2 rounded-md form-input">
-                        <!-- Options filled by JS -->
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-200">Instruksi/Catatan</label>
-                    <textarea id="dispo-catatan" rows="3" class="mt-1 block w-full px-3 py-2 rounded-md form-input"></textarea>
-                </div>
-                <div id="dispo-form-message" class="text-sm text-red-400 mb-4"></div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="document.getElementById('modal-disposisi').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Kirim Disposisi</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL: Custom Alert/Confirm -->
-    <div id="modal-custom" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
-        <div class="relative p-6 w-full max-w-sm glass-card">
-            <h3 id="custom-modal-title" class="text-lg font-bold mb-3 text-white">Notifikasi</h3>
-            <p id="custom-modal-message" class="text-sm text-gray-200 mb-6"></p>
-            <div id="custom-modal-actions" class="flex justify-end space-x-2">
-                <!-- Action buttons inserted by JS -->
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // *** PENTING: GANTI URL INI dengan URL Web App Google Apps Script Anda yang sudah di-deploy. ***
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
-        
-        let currentUser = null;
-        let allUsers = [];
-        let confirmCallback = null;
-
-        // --- UTILITY FUNCTIONS ---
-        
-        function showMessage(elementId, message, isError = true) {
-            const el = document.getElementById(elementId);
-            if(el) {
-                el.textContent = message;
-                el.className = `text-sm mb-4 ${isError ? 'text-red-400' : 'text-green-400'}`;
-                if (!message) el.className += ' hidden';
-                else el.className = el.className.replace(' hidden', '');
-            }
-        }
-        
-        function showCustomAlert(message, title = 'Notifikasi') {
-            const modal = document.getElementById('modal-custom');
-            document.getElementById('custom-modal-title').textContent = title;
-            document.getElementById('custom-modal-message').textContent = message;
-            
-            const actions = document.getElementById('custom-modal-actions');
-            actions.innerHTML = `<button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">OK</button>`;
-            modal.style.display = 'flex';
-        }
-        
-        function showCustomConfirm(message, callback) {
-            const modal = document.getElementById('modal-custom');
-            document.getElementById('custom-modal-title').textContent = 'Konfirmasi Tindakan';
-            document.getElementById('custom-modal-message').textContent = message;
-            confirmCallback = callback;
-
-            const actions = document.getElementById('custom-modal-actions');
-            actions.innerHTML = `
-                <button id="btn-cancel" class="px-4 py-2 bg-gray-500/50 rounded-md hover:bg-gray-500/70 text-white">Batal</button>
-                <button id="btn-confirm" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ya, Lanjutkan</button>
-            `;
-            
-            document.getElementById('btn-cancel').onclick = () => {
-                modal.style.display = 'none';
-                if (confirmCallback) confirmCallback(false);
-            };
-            document.getElementById('btn-confirm').onclick = () => {
-                modal.style.display = 'none';
-                if (confirmCallback) confirmCallback(true);
-            };
-
-            modal.style.display = 'flex';
-        }
-
-        function showLoading(show) {
-            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
-        }
-        
-        async function fetchWithRetry(url, options = {}, retries = 3) {
-            let attempt = 0;
-            while (attempt < retries) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const text = await response.text();
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                         console.error("Failed to parse JSON:", text);
-                         throw new Error("Received non-JSON response from server.");
-                    }
-                } catch (error) {
-                    attempt++;
-                    console.warn(`Fetch attempt ${attempt} failed: ${error.message}. Retrying...`);
-                    if (attempt >= retries) {
-                        throw error; 
-                    }
-                    await new Promise(res => setTimeout(res, 1000 * attempt));
-                }
-            }
-        }
-
-        // --- AUTHENTICATION & ROUTING ---
-
-        function checkLoginStatus() {
-            const userData = localStorage.getItem('currentUser');
-            const sidebarEl = document.getElementById('sidebar');
-
-            if (userData) {
-                currentUser = JSON.parse(userData);
-                document.getElementById('user-display-name').textContent = currentUser.nama;
-                document.getElementById('user-display-jabatan').textContent = currentUser.jabatan;
-                
-                sidebarEl.classList.remove('hidden');
-
-                const initialHash = window.location.hash.substring(1) || 'dashboard';
-                showPage(initialHash);
+function initializeDatabase(ss) {
+    let statusMessage = "Sheets checked: ";
+    try {
+        for (const sheetName in SHEET_CONFIG) {
+            let sheet = ss.getSheetByName(sheetName);
+            if (!sheet) {
+                sheet = ss.insertSheet(sheetName);
+                sheet.getRange(1, 1, 1, SHEET_CONFIG[sheetName].length).setValues([SHEET_CONFIG[sheetName]]);
+                sheet.setFrozenRows(1);
+                statusMessage += `${sheetName} (Created), `;
             } else {
-                currentUser = null;
-                sidebarEl.classList.add('hidden');
-                showPage('login');
-            }
-            lucide.createIcons(); 
-        }
-
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
-            document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
-
-            const targetPage = document.getElementById(pageId + '-page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                
-                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active-link'));
-                const activeLink = document.querySelector(`a[href="#${pageId}"]`);
-                if (activeLink) activeLink.classList.add('active-link');
-
-                if (currentUser) {
-                    window.location.hash = pageId;
-                    switch (pageId) {
-                        case 'dashboard': loadDashboardData(); break;
-                        case 'surat-masuk': loadSuratData('Masuk'); break;
-                        case 'surat-keluar': loadSuratData('Keluar'); break;
-                        case 'disposisi': loadMyDisposisi(); break;
-                        case 'users': loadUserManagement(); break;
-                        case 'log': loadLogData(); break;
-                        case 'arsip': loadArsipData(); break;
-                    }
-                }
-            } else if (pageId === 'login' || pageId === 'register') {
-                document.getElementById(pageId + '-page').classList.remove('hidden');
-                window.location.hash = '';
+                 statusMessage += `${sheetName} (Exists), `;
             }
         }
+        logActivity(ss, 'SYSTEM', 'Database Init', statusMessage);
+        return { status: 'success', message: 'Database initialization complete.', details: statusMessage };
+    } catch (e) {
+        return { status: 'error', message: 'Database initialization failed: ' + e.toString() };
+    }
+}
 
-        function logout() {
-            localStorage.removeItem('currentUser');
-            currentUser = null;
-            window.location.href = window.location.pathname;
+function getRootFolder() {
+    let folders = DriveApp.getFoldersByName(ROOT_FOLDER_NAME);
+    if (folders.hasNext()) return folders.next();
+    logActivity(openDatabase(), 'SYSTEM', 'Drive Init', 'Root folder created: ' + ROOT_FOLDER_NAME);
+    return DriveApp.createFolder(ROOT_FOLDER_NAME);
+}
+
+function getArsipLink(userId) {
+    try {
+        const rootFolder = getRootFolder();
+        logActivity(openDatabase(), userId, 'Get Arsip Link', 'User viewed Drive link.');
+        return { status: 'success', link: rootFolder.getUrl() };
+    } catch (e) {
+        return { status: 'error', message: 'Failed to get Drive link: ' + e.toString() };
+    }
+}
+
+// --- HELPER FUNCTIONS ---
+
+function findUserByLevel(ss, level) {
+    const sheet = ss.getSheetByName('User');
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const levelIndex = headers.indexOf('level');
+    
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i][levelIndex] == level) {
+            return rowToObject(headers, rows[i]);
         }
+    }
+    return null;
+}
 
-        // --- EVENT LISTENERS & HANDLERS ---
+function getUserById(ss, id) {
+    const sheet = ss.getSheetByName('User');
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const idIndex = headers.indexOf('id');
+    
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i][idIndex] === id) {
+            return rowToObject(headers, rows[i]);
+        }
+    }
+    return null;
+}
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkLoginStatus();
+function getSuratById(ss, id) {
+    const sheet = ss.getSheetByName('Surat');
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const idIndex = headers.indexOf('id');
+    
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i][idIndex] === id) {
+            return rowToObject(headers, rows[i]);
+        }
+    }
+    return null;
+}
 
-            const sidebar = document.getElementById('sidebar');
-            document.getElementById('menu-toggle').addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-            });
 
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-            document.getElementById('register-form').addEventListener('submit', handleRegister);
-            document.getElementById('form-surat').addEventListener('submit', handleSuratSubmit);
-            document.getElementById('form-disposisi').addEventListener('submit', handleDisposisiSubmit);
-            
-            document.getElementById('surat-jenis').addEventListener('change', (e) => {
-                document.getElementById('label-pengirim').textContent = e.target.value === 'Masuk' ? 'Pengirim' : 'Penerima';
-            });
+// --- AUTHENTICATION & USER MANAGEMENT ---
+
+function handleLogin(ss, data) {
+    const sheet = ss.getSheetByName('User');
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows.shift();
+
+    for (const row of rows) {
+        const user = rowToObject(headers, row);
+        if (user.userid === data.userid && user.password_hash === data.password) {
+            if (user.status !== 'Aktif') {
+                 logActivity(ss, user.id, 'Login Failed', 'Account is inactive.');
+                 return { status: 'error', message: 'Akun Anda nonaktif. Hubungi Admin.' };
+            }
+            logActivity(ss, user.id, 'Login Success', `User ${user.nama} logged in.`);
+            delete user.password_hash;
+            return { status: 'success', message: 'Login successful.', user: user };
+        }
+    }
+    logActivity(ss, data.userid || 'Unknown', 'Login Failed', 'Invalid credentials.');
+    return { status: 'error', message: 'User ID atau Password salah.' };
+}
+
+function handleRegistration(ss, data) {
+    const sheet = ss.getSheetByName('User');
+    const userid = data.userid;
+
+    const userIdColumn = sheet.getRange('B:B').getValues().flat();
+    if (userIdColumn.includes(userid)) {
+        return { status: 'error', message: 'User ID sudah terdaftar.' };
+    }
+
+    const newId = Utilities.getUuid();
+    sheet.appendRow([
+        newId, 
+        userid,
+        data.nama, 
+        data.wa, 
+        data.email, 
+        data.jabatan, 
+        data.level,
+        data.password, // Storing plain password
+        'Aktif'
+    ]);
+    
+    logActivity(ss, newId, 'Registration Success', `New user ${data.nama} registered.`);
+    return { status: 'success', message: 'Pendaftaran berhasil.' };
+}
+
+function handlePasswordReset(ss, data) {
+    const adminUser = getUserById(ss, data.adminUserId);
+    if (!adminUser || adminUser.jabatan !== 'Super Admin') {
+        return { status: 'error', message: 'Unauthorized. Only Super Admin can reset passwords.' };
+    }
+
+    const targetSheet = ss.getSheetByName('User');
+    const rows = targetSheet.getDataRange().getValues();
+    const headers = rows[0];
+    const idIndex = headers.indexOf('id');
+    const hashIndex = headers.indexOf('password_hash');
+    const targetRow = rows.findIndex(row => row[idIndex] === data.targetUserId);
+
+    if (targetRow === -1) return { status: 'error', message: 'Target user not found.' };
+
+    targetSheet.getRange(targetRow + 1, hashIndex + 1).setValue('password123');
+    
+    logActivity(ss, data.adminUserId, 'Password Reset', `User ID ${data.targetUserId} password reset.`);
+    return { status: 'success', message: 'Password berhasil direset menjadi "password123".' };
+}
+
+function getAllUsers(ss, userId) {
+    const userSheet = ss.getSheetByName('User');
+    const rows = userSheet.getDataRange().getValues();
+    const headers = rows.shift();
+    const users = rows.map(row => {
+        const user = rowToObject(headers, row);
+        delete user.password_hash;
+        return user;
+    });
+    return { status: 'success', users: users };
+}
+
+// --- SURAT & ARSIP MANAGEMENT ---
+
+function getMonthlyFolder(date) {
+    const rootFolder = getRootFolder();
+    const year = date.getFullYear().toString();
+    const monthName = Utilities.formatDate(date, Session.getScriptTimeZone(), "MM_MMMM");
+    let yearFolder = getOrCreateFolder(rootFolder, year);
+    return getOrCreateFolder(yearFolder, monthName);
+}
+
+function getOrCreateFolder(parent, name) {
+    let folders = parent.getFoldersByName(name);
+    if (folders.hasNext()) return folders.next();
+    return parent.createFolder(name);
+}
+
+function handleSuratInput(ss, data) {
+    const suratSheet = ss.getSheetByName('Surat');
+    const user = getUserById(ss, data.userId);
+
+    if (!user) return { status: 'error', message: 'User not authenticated.' };
+    if (user.jabatan !== 'Admin TU' && user.jabatan !== 'Super Admin') {
+        return { status: 'error', message: 'Hanya Admin TU atau Super Admin yang dapat mengupload surat masuk.' };
+    }
+
+    try {
+        const fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileBase64), data.fileMimeType, data.fileName);
+        const targetFolder = getMonthlyFolder(new Date(data.tanggal));
+        const newFile = targetFolder.createFile(fileBlob);
+        const fileUrl = newFile.getUrl();
+
+        const newSuratId = Utilities.getUuid();
+        suratSheet.appendRow([
+            newSuratId, 'Masuk', data.nomor, data.perihal, data.tanggal,
+            data.pengirim_penerima, fileUrl, 'Sudah Disposisi'
+        ]);
+
+        const direktur = findUserByLevel(ss, 1);
+        if (!direktur) throw new Error("Tidak ditemukan user dengan Level 1 (Direktur).");
+
+        const disposisiSheet = ss.getSheetByName('Disposisi');
+        disposisiSheet.appendRow([
+            Utilities.getUuid(), newSuratId, user.id, direktur.id,
+            "Surat masuk baru untuk ditindaklanjuti.", new Date(), 'Belum Dibaca',
+            'Belum Diproses', null, null
+        ]);
+
+        logActivity(ss, user.id, 'Input Surat & Auto-Disposisi', `${data.nomor} -> ke ${direktur.nama}`);
+        return { status: 'success', message: 'Surat berhasil diarsip dan otomatis didisposisikan ke Direktur.', fileUrl: fileUrl };
+
+    } catch (e) {
+        logActivity(ss, user.id, 'Input Surat Failed', e.toString());
+        return { status: 'error', message: 'Gagal menyimpan surat: ' + e.toString() };
+    }
+}
+
+function getSuratList(ss, jenis) {
+    const suratSheet = ss.getSheetByName('Surat');
+    const rows = suratSheet.getDataRange().getValues();
+    const headers = rows.shift();
+    
+    const suratList = rows
+        .map(row => rowToObject(headers, row))
+        .filter(surat => surat.jenis === jenis)
+        .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+    return { status: 'success', surat: suratList };
+}
+
+
+// --- DISPOSISI & NOTIFIKASI ---
+
+function handleDisposisi(ss, data) {
+    const disposisiSheet = ss.getSheetByName('Disposisi');
+    const dariUser = getUserById(ss, data.dari_user_id);
+    if (!dariUser) return { status: 'error', message: 'User pengirim tidak valid.' };
+    
+    const recipients = data.ke_user_ids || [];
+    if (recipients.length === 0) return { status: 'error', message: 'Penerima disposisi belum dipilih.' };
+
+    try {
+        const timestamp = new Date();
+        const batchId = Utilities.getUuid();
+
+        recipients.forEach(ke_user_id => {
+            const keUser = getUserById(ss, ke_user_id);
+            if (keUser) {
+                disposisiSheet.appendRow([
+                    Utilities.getUuid(), data.id_surat, data.dari_user_id, ke_user_id, 
+                    data.catatan, timestamp, 'Belum Dibaca', 'Belum Diproses',
+                    data.parent_disposisi_id || null, batchId
+                ]);
+                logActivity(ss, dariUser.id, 'Disposisi Success', `Disposisi ke ${keUser.nama} (Batch: ${batchId})`);
+            } else {
+                logActivity(ss, dariUser.id, 'Disposisi Warning', `User ID penerima ${ke_user_id} tidak ditemukan.`);
+            }
         });
 
-        // --- GAS API INTERACTION FUNCTIONS ---
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const userid = document.getElementById('login-userid').value.trim();
-            const password = document.getElementById('login-password').value.trim();
-            
-            if (!GAS_API_URL.startsWith('https://') || GAS_API_URL.includes('AKfycbw...')) {
-                showCustomAlert('ERROR: Harap ganti variabel GAS_API_URL dengan URL Web App Anda di dalam kode HTML.', 'Kesalahan Konfigurasi');
-                return;
-            }
-
-            showLoading(true);
-            try {
-                const url = `${GAS_API_URL}?action=login&userid=${encodeURIComponent(userid)}&password=${encodeURIComponent(password)}`;
-                const data = await fetchWithRetry(url, { method: 'GET' });
-
-                if (data.status === 'success') {
-                    localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    window.location.reload(); // Reload to apply logged-in state
-                } else {
-                    showMessage('login-error-message', data.message || 'Login gagal. Cek User ID/Password.', true);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                let errorMessage = 'Terjadi kesalahan jaringan atau server. Pastikan URL GAS benar dan Web App di-deploy ulang dengan akses "Anyone".';
-                showMessage('login-error-message', errorMessage, true);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function handleRegister(e) {
-            e.preventDefault();
-            const form = document.getElementById('register-form');
-            const password = form['reg-password'].value.trim();
-
-            showLoading(true);
-            try {
-                const params = new URLSearchParams({
-                    action: 'register',
-                    userid: form['reg-userid'].value.trim(),
-                    nama: form['reg-nama'].value.trim(),
-                    wa: form['reg-wa'].value.trim(),
-                    email: form['reg-email'].value.trim(),
-                    jabatan: form['reg-jabatan'].value.trim(),
-                    password: password
-                });
-                const url = `${GAS_API_URL}?${params.toString()}`;
-                const result = await fetchWithRetry(url, { method: 'GET' });
-
-                if (result.status === 'success') {
-                    showMessage('register-error-message', 'Pendaftaran berhasil! Silakan login.', false);
-                    form.reset();
-                    setTimeout(() => showPage('login'), 2000);
-                } else {
-                    showMessage('register-error-message', result.message || 'Pendaftaran gagal.', true);
-                }
-            } catch (error) {
-                console.error('Register error:', error);
-                let errorMessage = 'Terjadi kesalahan jaringan atau server. Pastikan URL GAS benar dan Web App di-deploy ulang dengan akses "Anyone".';
-                showMessage('register-error-message', errorMessage, true);
-            } finally {
-                showLoading(false);
-            }
+        if (data.parent_disposisi_id) {
+            updateDisposisiStatus(ss, { 
+                id: data.parent_disposisi_id, statusType: 'tindak_lanjut', 
+                value: 'Diteruskan', userId: data.dari_user_id 
+            });
         }
         
-        // **FIX**: New function to open the modal and set the default date
-        function openTambahSuratModal() {
-            // Set date to today
-            document.getElementById('surat-tanggal').value = new Date().toISOString().split('T')[0];
-            // Clear any previous messages
-            showMessage('surat-form-message', '', false);
-            // Show modal
-            document.getElementById('modal-tambah-surat').style.display = 'flex';
-        }
+        return { status: 'success', message: `Disposisi berhasil dikirim ke ${recipients.length} penerima.` };
+    } catch (e) {
+        logActivity(ss, data.dari_user_id, 'Disposisi Failed', e.toString() + " | Stack: " + e.stack);
+        return { status: 'error', message: 'Gagal melakukan disposisi: ' + e.toString() };
+    }
+}
 
-        async function handleSuratSubmit(e) {
-            e.preventDefault();
-            
-            const fileInput = document.getElementById('surat-file');
-            
-            if (fileInput.files.length === 0) {
-                showMessage('surat-form-message', 'File surat wajib diupload.', true);
-                return;
-            }
+function updateDisposisiStatus(ss, data) {
+    const sheet = ss.getSheetByName('Disposisi');
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const idIndex = headers.indexOf('id');
+    const statusColumnName = `status_${data.statusType}`;
+    const statusIndex = headers.indexOf(statusColumnName);
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
+    if (statusIndex === -1) return { status: 'error', message: `Kolom status tidak ditemukan.` };
 
-            reader.onload = async function(event) {
-                showLoading(true);
-                const base64File = event.target.result.split(',')[1];
+    const newStatus = data.statusType === 'baca' ? 'Sudah Dibaca' : data.value;
+    const targetRowIndex = rows.findIndex(row => row[idIndex] === data.id);
 
-                // **FIX**: Using document.getElementById for robust data retrieval
-                const payload = {
-                    action: 'input_surat',
-                    jenis: document.getElementById('surat-jenis').value,
-                    nomor: document.getElementById('surat-nomor').value.trim(),
-                    perihal: document.getElementById('surat-perihal').value.trim(),
-                    tanggal: document.getElementById('surat-tanggal').value,
-                    pengirim_penerima: document.getElementById('surat-pengirim').value.trim(),
-                    fileName: file.name,
-                    fileMimeType: file.type,
-                    fileBase64: base64File,
-                    userId: currentUser.id
-                };
+    if (targetRowIndex === -1) return { status: 'error', message: 'Disposisi ID tidak ditemukan.' };
+    
+    sheet.getRange(targetRowIndex + 1, statusIndex + 1).setValue(newStatus);
+    logActivity(ss, data.userId, `Update Disposisi`, `ID ${data.id} -> ${statusColumnName} = ${newStatus}.`);
+    return { status: 'success', message: `Status berhasil diubah.` };
+}
 
-                try {
-                    const result = await fetchWithRetry(GAS_API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify(payload),
-                    });
+function getMyDisposisi(ss, userId) {
+    const dispoRows = ss.getSheetByName('Disposisi').getDataRange().getValues();
+    const dispoHeaders = dispoRows.shift();
+    const suratMap = createMapFromSheet(ss, 'Surat', 'id');
+    const userMap = createMapFromSheet(ss, 'User', 'id', ['nama', 'wa']);
 
-                    if (result.status === 'success') {
-                        showCustomAlert('Surat berhasil disimpan dan diarsip!', 'Berhasil');
-                        document.getElementById('form-surat').reset();
-                        document.getElementById('modal-tambah-surat').style.display='none';
-                        loadSuratData(payload.jenis);
-                    } else {
-                        showMessage('surat-form-message', result.message || 'Gagal menyimpan surat.', true);
-                    }
-                } catch (error) {
-                    console.error('Surat submit error:', error);
-                    showMessage('surat-form-message', 'Terjadi kesalahan jaringan atau server.', true);
-                } finally {
-                    showLoading(false);
-                }
+    const myDisposisi = dispoRows
+        .map(row => rowToObject(dispoHeaders, row))
+        .filter(d => d.ke_user_id === userId)
+        .map(d => {
+            const surat = suratMap[d.id_surat] || {};
+            const dariUser = userMap[d.dari_user_id] || {};
+            return {
+                id: d.id, // ID disposisi, bukan surat
+                id_surat: d.id_surat,
+                nomor_surat: surat.nomor_surat,
+                perihal: surat.perihal,
+                file_url: surat.file_url,
+                dari_user_nama: dariUser.nama || 'N/A',
+                tanggal_disposisi: d.tanggal_disposisi,
+                status_baca: d.status_baca,
+                status_tindak_lanjut: d.status_tindak_lanjut,
+                catatan: d.catatan
             };
-            
-            reader.readAsDataURL(file);
-        }
+        })
+        .sort((a, b) => new Date(b.tanggal_disposisi) - new Date(a.tanggal_disposisi));
 
-        async function loadSuratData(jenis) {
-            const listId = jenis === 'Masuk' ? 'surat-masuk-list' : 'surat-keluar-list';
-            const listContainer = document.getElementById(listId);
-            listContainer.innerHTML = '<p class="text-gray-200">Memuat data surat...</p>';
-            
-            showLoading(true);
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}`);
-                
-                if (data.status === 'success') {
-                    allUsers = data.users || [];
-                    renderSuratList(listContainer, data.surat, jenis);
-                } else {
-                    listContainer.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data surat.'}</p>`;
-                }
-            } catch (error) {
-                console.error(`Load Surat ${jenis} error:`, error);
-                listContainer.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-            } finally {
-                showLoading(false);
-            }
-        }
+    logActivity(ss, userId, 'Get My Disposisi', `Fetched ${myDisposisi.length} disposisi.`);
+    return { status: 'success', disposisi: myDisposisi };
+}
+
+// --- DASHBOARD DATA ---
+
+function getDashboardData(ss, userId) {
+    const allSurat = ss.getSheetByName('Surat').getDataRange().getValues();
+    allSurat.shift(); // remove header
+
+    const allDisposisi = ss.getSheetByName('Disposisi').getDataRange().getValues();
+    const dispoHeaders = allDisposisi.shift();
+
+    const today = new Date();
+    const thisMonth = today.getMonth();
+    const thisYear = today.getFullYear();
+    
+    const suratMasukBulanIni = allSurat.filter(s => {
+        const sDate = new Date(s[4]); // tanggal column
+        return s[1] === 'Masuk' && sDate.getMonth() === thisMonth && sDate.getFullYear() === thisYear;
+    }).length;
+
+    const disposisiObjects = allDisposisi.map(r => rowToObject(dispoHeaders, r));
+
+    const belumDidisposisi = 0; // Logic changed, Admin TU doesn't see this.
+    
+    const belumDitindaklanjuti = disposisiObjects.filter(d => 
+        d.ke_user_id === userId && 
+        d.status_tindak_lanjut !== 'Selesai' && d.status_tindak_lanjut !== 'Diteruskan'
+    ).length;
+    
+    const latestDisposisi = getMyDisposisi(ss, userId).disposisi.slice(0, 5);
+
+    return {
+        status: 'success',
+        stats: { suratMasukBulanIni, belumDidisposisi, belumDitindaklanjuti },
+        latestDisposisi: latestDisposisi
+    };
+}
+
+// --- LOGGING & UTILITY ---
+
+function logActivity(ss, userId, action, detail) {
+    try {
+        const logSheet = ss.getSheetByName('Log');
+        if (!logSheet) { Logger.log('FATAL: Log sheet does not exist.'); return; }
         
-        function renderSuratList(container, suratList, jenis) {
-            if (!suratList || suratList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200">Belum ada data surat.</p>';
-                return;
-            }
+        const user = getUserById(ss, userId);
+        const userName = user ? `${user.nama} (${user.jabatan})` : userId;
 
-            let html = `
-            <table class="min-w-full divide-y divide-white/20">
-                <thead class="bg-black/20">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nomor Surat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Perihal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">${jenis === 'Masuk' ? 'Pengirim' : 'Penerima'}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Tanggal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/20">
-            `;
-            
-            suratList.forEach(surat => {
-                const statusColor = surat.status === 'Belum Disposisi' ? 'bg-yellow-400/20 text-yellow-300' : 'bg-green-400/20 text-green-300';
-                
-                const disposisiButton = (currentUser.jabatan === 'Pimpinan' || currentUser.jabatan === 'Admin') && jenis === 'Masuk'
-                    ? `<button onclick="openDisposisiModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-amber-400 hover:text-amber-300 font-medium ml-3">Disposisi</button>`
-                    : '';
-                    
-                html += `
-                    <tr data-search="${surat.nomor_surat} ${surat.perihal} ${surat.pengirim_penerima}" class="hover:bg-black/10">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${surat.nomor_surat}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.perihal}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.pengirim_penerima}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.tanggal}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${surat.status}</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="${surat.file_url}" target="_blank" class="text-amber-400 hover:text-amber-300 font-medium">Lihat File</a>
-                            ${disposisiButton}
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `</tbody></table>`;
-            container.innerHTML = html;
+        logSheet.appendRow([new Date(), userName, action, detail]);
+    } catch (e) {
+        Logger.log('FATAL: Could not write to Log sheet: ' + e.toString());
+    }
+}
+
+function getLogData(ss, userId) {
+    const adminUser = getUserById(ss, userId);
+    if (!adminUser || adminUser.jabatan !== 'Super Admin') {
+        return { status: 'error', message: 'Unauthorized. Only Super Admin can view logs.' };
+    }
+    
+    const logSheet = ss.getSheetByName('Log');
+    const rows = logSheet.getDataRange().getValues();
+    const headers = rows.shift();
+    const logs = rows.map(row => rowToObject(headers, row));
+    
+    return { status: 'success', log: logs };
+}
+
+function rowToObject(headers, row) {
+    const obj = {};
+    headers.forEach((header, index) => { obj[header] = row[index]; });
+    return obj;
+}
+
+function createMapFromSheet(ss, sheetName, keyCol, valCols = null) {
+    const sheet = ss.getSheetByName(sheetName);
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows.shift();
+    const map = {};
+    const keyIndex = headers.indexOf(keyCol);
+    if (keyIndex === -1) return map;
+
+    rows.forEach(row => {
+        const key = row[keyIndex];
+        if (valCols) {
+             const limitedObj = {};
+             valCols.forEach(col => {
+                const colIndex = headers.indexOf(col);
+                if(colIndex !== -1) limitedObj[col] = row[colIndex]
+             });
+             map[key] = limitedObj;
+        } else {
+             map[key] = rowToObject(headers, row);
         }
+    });
+    return map;
+}
 
-        // --- DISPOSISI LOGIC ---
+/**
+ * Initial setup function. Run once from Apps Script Editor.
+ */
+function initialSetup() {
+    const ss = openDatabase();
+    initializeDatabase(ss); // Creates sheets if they don't exist
+    getRootFolder();
+    
+    // Add new columns if they don't exist
+    const userSheet = ss.getSheetByName('User');
+    const userHeaders = userSheet.getRange(1, 1, 1, userSheet.getLastColumn()).getValues()[0];
+    if (!userHeaders.includes('level')) {
+        userSheet.getRange(1, userHeaders.length + 1).setValue('level');
+        logActivity(ss, 'SYSTEM', 'Sheet Update', 'Added "level" to User sheet.');
+    }
+    
+    const dispoSheet = ss.getSheetByName('Disposisi');
+    const dispoHeaders = dispoSheet.getRange(1, 1, 1, dispoSheet.getLastColumn()).getValues()[0];
+    if (!dispoHeaders.includes('parent_disposisi_id')) {
+        dispoSheet.getRange(1, dispoHeaders.length + 1).setValue('parent_disposisi_id');
+        logActivity(ss, 'SYSTEM', 'Sheet Update', 'Added "parent_disposisi_id" to Disposisi sheet.');
+    }
+    if (!dispoHeaders.includes('batch_id')) {
+        // After adding parent_disposisi_id, the last column index increases by 1
+        const newLastCol = dispoSheet.getLastColumn();
+        dispoSheet.getRange(1, newLastCol + 1).setValue('batch_id');
+        logActivity(ss, 'SYSTEM', 'Sheet Update', 'Added "batch_id" to Disposisi sheet.');
+    }
 
-        function openDisposisiModal(suratId, suratNomor) {
-            document.getElementById('dispo-surat-id').value = suratId;
-            document.getElementById('dispo-surat-nomor').textContent = suratNomor;
-            
-            const select = document.getElementById('dispo-penerima');
-            select.innerHTML = '<option value="">Pilih Penerima</option>';
-            
-            allUsers.filter(u => u.id !== currentUser.id && u.status === 'Aktif').forEach(user => {
-                select.innerHTML += `<option value="${user.id}" class="text-black">${user.nama} (${user.jabatan})</option>`;
-            });
-            
-            document.getElementById('modal-disposisi').style.display='flex';
-            showMessage('dispo-form-message', '', false);
-        }
-
-        async function handleDisposisiSubmit(e) {
-            e.preventDefault();
-            const suratId = document.getElementById('dispo-surat-id').value;
-            const penerimaId = document.getElementById('dispo-penerima').value;
-            const catatan = document.getElementById('dispo-catatan').value.trim();
-
-            if (!penerimaId) {
-                 showMessage('dispo-form-message', 'Penerima disposisi wajib dipilih.', true);
-                 return;
-            }
-
-            showLoading(true);
-            try {
-                const payload = {
-                    action: 'disposisi_surat',
-                    id_surat: suratId,
-                    dari_user_id: currentUser.id,
-                    ke_user_id: penerimaId,
-                    catatan: catatan
-                };
-                const result = await fetchWithRetry(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                if (result.status === 'success') {
-                    showCustomAlert('Disposisi berhasil dikirim. Notifikasi WA/Telegram sedang diproses.', 'Berhasil');
-                    document.getElementById('form-disposisi').reset();
-                    document.getElementById('modal-disposisi').style.display='none';
-                    loadSuratData('Masuk');
-                } else {
-                    showMessage('dispo-form-message', result.message || 'Gagal mengirim disposisi.', true);
-                }
-            } catch (error) {
-                console.error('Disposisi submit error:', error);
-                showMessage('dispo-form-message', 'Terjadi kesalahan jaringan atau server.', true);
-            } finally {
-                showLoading(false);
-            }
-        }
-        
-        async function loadMyDisposisi() {
-            const container = document.getElementById('my-disposisi-list');
-            container.innerHTML = '<p class="text-gray-200">Memuat disposisi...</p>';
-            
-            showLoading(true);
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}`);
-                
-                if (data.status === 'success') {
-                    renderMyDisposisiList(container, data.disposisi);
-                } else {
-                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data disposisi.'}</p>`;
-                }
-            } catch (error) {
-                console.error('Load My Disposisi error:', error);
-                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function renderMyDisposisiList(container, disposisiList) {
-             if (!disposisiList || disposisiList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi baru untuk Anda.</p>';
-                return;
-            }
-
-            let html = `<div class="space-y-4">`;
-            
-            disposisiList.forEach(d => {
-                const statusBacaColor = d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400';
-                const statusTLColor = d.status_tindak_lanjut === 'Belum Diproses' ? 'text-yellow-400' : (d.status_tindak_lanjut === 'Diproses' ? 'text-blue-400' : 'text-green-400');
-                
-                const markReadButton = d.status_baca === 'Belum Dibaca'
-                    ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-amber-400 hover:underline font-medium">Tandai Dibaca</button>`
-                    : '';
-                
-                const markTLSelect = d.status_tindak_lanjut !== 'Selesai'
-                    ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-sm border rounded p-1 form-input">
-                        <option class="text-black" value="Belum Diproses" ${d.status_tindak_lanjut === 'Belum Diproses' ? 'selected' : ''}>Belum Diproses</option>
-                        <option class="text-black" value="Diproses" ${d.status_tindak_lanjut === 'Diproses' ? 'selected' : ''}>Diproses</option>
-                        <option class="text-black" value="Selesai" ${d.status_tindak_lanjut === 'Selesai' ? 'selected' : ''}>Selesai</option>
-                       </select>`
-                    : `<span class="text-sm font-semibold ${statusTLColor}">Selesai</span>`;
-
-                html += `
-                    <div class="glass-card p-4 border-l-4 ${d.status_baca === 'Belum Dibaca' ? 'border-red-500' : 'border-gray-500'}">
-                        <div class="flex justify-between items-start">
-                             <div>
-                                <p class="font-bold text-white">${d.nomor_surat}</p>
-                                <p class="text-sm text-gray-200">${d.perihal}</p>
-                                <p class="text-xs text-gray-300 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
-                            </div>
-                            <div class="flex-shrink-0 ml-4">
-                                ${markTLSelect}
-                            </div>
-                        </div>
-                        <div class="mt-3 p-3 bg-black/20 rounded-md">
-                            <p class="text-sm text-gray-100"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
-                        </div>
-                        <div class="mt-3 flex items-center space-x-4">
-                            <a href="${d.file_url}" target="_blank" class="text-sm text-amber-400 hover:underline font-medium">Lihat File Surat</a>
-                            ${markReadButton}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += `</div>`;
-            container.innerHTML = html;
-        }
-
-        async function updateDisposisiStatus(disposisiId, statusType, value = null) {
-            showLoading(true);
-            try {
-                const payload = {
-                    action: 'update_disposisi_status',
-                    id: disposisiId, 
-                    statusType: statusType, 
-                    value: value, 
-                    userId: currentUser.id
-                };
-
-                const result = await fetchWithRetry(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                if (result.status === 'success') {
-                    loadMyDisposisi(); 
-                    loadDashboardData(); 
-                } else {
-                    showCustomAlert('Gagal update status: ' + (result.message || 'Terjadi kesalahan.'), 'Kesalahan Update');
-                }
-            } catch (error) {
-                console.error('Update status error:', error);
-                showCustomAlert('Terjadi kesalahan jaringan/server: ' + error.message, 'Kesalahan Jaringan');
-            } finally {
-                showLoading(false);
-            }
-        }
-        
-        // --- DASHBOARD, ARSIP, USER, LOG ---
-
-        async function loadDashboardData() {
-            showLoading(true);
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_dashboard_data&userId=${currentUser.id}`);
-                
-                if (data.status === 'success') {
-                    document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
-                    document.getElementById('stat-undisposed').textContent = data.stats.belumDidisposisi || 0;
-                    document.getElementById('stat-unfollowed').textContent = data.stats.belumDitindaklanjuti || 0;
-
-                    const container = document.getElementById('disposisi-list-dashboard');
-                    if (data.latestDisposisi && data.latestDisposisi.length > 0) {
-                         let html = '';
-                         data.latestDisposisi.slice(0, 5).forEach(d => {
-                            html += `
-                                <div class="p-3 border-b border-white/20 hover:bg-black/10 rounded-lg">
-                                    <p class="font-semibold text-white">${d.perihal}</p>
-                                    <p class="text-sm text-gray-200">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
-                                    Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400'}">${d.status_baca}</span></p>
-                                </div>
-                            `;
-                         });
-                         container.innerHTML = html;
-                    } else {
-                        container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi atau notifikasi terbaru.</p>';
-                    }
-                }
-            } catch (error) {
-                console.error('Load Dashboard error:', error);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function loadUserManagement() {
-            const container = document.getElementById('user-management-content');
-            if (currentUser.jabatan !== 'Admin') {
-                container.innerHTML = '<p class="text-red-400 font-semibold">Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
-                return;
-            }
-
-            container.innerHTML = '<p class="text-gray-200">Memuat daftar user...</p>';
-            showLoading(true);
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
-                
-                if (data.status === 'success') {
-                    renderUserList(container, data.users);
-                } else {
-                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data user.'}</p>`;
-                }
-            } catch (error) {
-                console.error('Load User Management error:', error);
-                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-            } finally {
-                showLoading(false);
-            }
-        }
-        
-        function renderUserList(container, userList) {
-            let html = `
-            <p class="text-sm text-gray-200 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
-            <table class="min-w-full divide-y divide-white/20">
-                <thead class="bg-black/20">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">No. WA</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Jabatan</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/20">
-            `;
-            
-            userList.forEach(user => {
-                const statusColor = user.status === 'Aktif' ? 'bg-green-400/20 text-green-300' : 'bg-red-400/20 text-red-300';
-                const actionButton = user.id !== currentUser.id
-                    ? `<button onclick="triggerResetPassword('${user.id}')" class="text-red-400 hover:text-red-300 font-medium">Reset Pass</button>`
-                    : `<span class="text-gray-400">Akun Anda</span>`;
-
-                html += `
-                    <tr class="hover:bg-black/10">
-                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">${user.nama}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.userid}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.wa}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.jabatan}</td>
-                        <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${user.status}</span></td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">${actionButton}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        function triggerResetPassword(userId) {
-            showCustomConfirm('Yakin ingin mereset password user ini menjadi "password123"? Tindakan ini tidak dapat dibatalkan.', (confirmed) => {
-                if (confirmed) {
-                    resetUserPassword(userId);
-                }
-            });
-        }
-
-        async function resetUserPassword(userId) {
-            showLoading(true);
-            try {
-                const payload = {
-                    action: 'reset_password',
-                    targetUserId: userId,
-                    adminUserId: currentUser.id
-                };
-
-                const result = await fetchWithRetry(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                if (result.status === 'success') {
-                    showCustomAlert('Password berhasil direset menjadi "password123". Harap segera informasikan kepada user.', 'Reset Berhasil');
-                    loadUserManagement();
-                } else {
-                    showCustomAlert('Gagal reset password: ' + (result.message || 'Terjadi kesalahan.'), 'Reset Gagal');
-                }
-            } catch (error) {
-                console.error('Reset password error:', error);
-                showCustomAlert('Terjadi kesalahan jaringan/server: ' + error.message, 'Kesalahan Jaringan');
-            } finally {
-                showLoading(false);
-            }
-        }
-        
-        function filterSurat(listId, query) {
-            const rows = document.getElementById(listId).querySelectorAll('tbody tr');
-            const lowerCaseQuery = query.toLowerCase();
-
-            rows.forEach(row => {
-                const searchData = row.getAttribute('data-search').toLowerCase();
-                row.style.display = searchData.includes(lowerCaseQuery) ? '' : 'none';
-            });
-        }
-        
-        async function loadLogData() {
-            const container = document.getElementById('log-content');
-             if (currentUser.jabatan !== 'Admin') {
-                container.innerHTML = '<p class="text-red-400 font-semibold">Hanya Admin yang dapat melihat Log Aktivitas.</p>';
-                return;
-            }
-            container.innerHTML = '<p class="text-gray-200">Memuat log aktivitas...</p>';
-            
-            showLoading(true);
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_log&userId=${currentUser.id}`);
-                
-                if (data.status === 'success') {
-                    renderLogList(container, data.log);
-                } else {
-                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat log.'}</p>`;
-                }
-            } catch (error) {
-                console.error('Load Log error:', error);
-                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function renderLogList(container, logList) {
-            if (!logList || logList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200">Log masih kosong.</p>';
-                return;
-            }
-
-            let html = `
-            <table class="min-w-full divide-y divide-white/20">
-                <thead class="bg-black/20">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Timestamp</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Detail</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/20">
-            `;
-            
-            logList.slice().reverse().slice(0, 100).forEach(log => { // Show 100 newest logs
-                html += `
-                    <tr class="hover:bg-black/10">
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-300">${log.timestamp}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-300">${log.user}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-white">${log.action}</td>
-                        <td class="px-4 py-2 text-xs text-gray-300 break-all">${log.detail}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        async function loadArsipData() {
-             const container = document.getElementById('arsip-list');
-             container.innerHTML = '<p class="text-gray-200">Memuat link folder arsip...</p>';
-            
-             showLoading(true);
-             try {
-                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_arsip_link&userId=${currentUser.id}`);
-                
-                 if (data.status === 'success' && data.link) {
-                     container.innerHTML = `
-                         <p class="mb-4 text-gray-100">Akses semua file arsip Anda di Google Drive melalui link berikut:</p>
-                         <a href="${data.link}" target="_blank" class="text-white hover:text-amber-300 font-bold text-lg p-4 border border-white/20 rounded-lg bg-black/20 inline-flex items-center space-x-2 transition-colors">
-                             <i data-lucide="folder-open" class="w-6 h-6"></i>
-                             <span>Buka Folder Arsip Google Drive</span>
-                         </a>
-                         <p class="mt-4 text-sm text-gray-300 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
-                     `;
-                     lucide.createIcons();
-                 } else {
-                     container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat link arsip. Pastikan GAS sudah di-deploy dan terotorisasi ke Drive.'}</p>`;
-                 }
-             } catch (error) {
-                 console.error('Load Arsip error:', error);
-                 container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-             } finally {
-                 showLoading(false);
-             }
-         }
-    </script>
-</body>
-</html>
+    Logger.log('Setup Complete. Please re-deploy the Web App with a new version.');
+}
 
