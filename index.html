@@ -80,8 +80,8 @@
                     <p class="text-sm text-center text-red-500 mb-4" id="login-error-message"></p>
                     <form id="login-form">
                         <div class="mb-4">
-                            <label for="login-wa" class="block text-sm font-medium text-gray-700">Nomor WA</label>
-                            <input type="text" id="login-wa" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Contoh: 6281xxxx">
+                            <label for="login-userid" class="block text-sm font-medium text-gray-700">User ID</label>
+                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Masukkan User ID Anda">
                         </div>
                         <div class="mb-6">
                             <label for="login-password" class="block text-sm font-medium text-gray-700">Password</label>
@@ -103,20 +103,24 @@
                     <form id="register-form">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <label for="reg-userid" class="block text-sm font-medium text-gray-700">User ID (untuk login)</label>
+                                <input type="text" id="reg-userid" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
                                 <label for="reg-nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
                                 <input type="text" id="reg-nama" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                             </div>
                             <div>
-                                <label for="reg-wa" class="block text-sm font-medium text-gray-700">Nomor WA (ID Login)</label>
+                                <label for="reg-wa" class="block text-sm font-medium text-gray-700">Nomor WA</label>
                                 <input type="text" id="reg-wa" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="6281xxxx">
                             </div>
-                            <div>
-                                <label for="reg-email" class="block text-sm font-medium text-gray-700">Email (Opsional)</label>
-                                <input type="email" id="reg-email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
+                             <div>
                                 <label for="reg-jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
                                 <input type="text" id="reg-jabatan" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="reg-email" class="block text-sm font-medium text-gray-700">Email (Opsional)</label>
+                                <input type="email" id="reg-email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                             </div>
                         </div>
                         <div class="mt-4">
@@ -505,7 +509,7 @@
 
         async function handleLogin(e) {
             e.preventDefault();
-            const wa = document.getElementById('login-wa').value.trim();
+            const userid = document.getElementById('login-userid').value.trim();
             const password = document.getElementById('login-password').value.trim();
             
             if (!GAS_API_URL.startsWith('https://')) {
@@ -516,7 +520,7 @@
             showLoading(true);
             try {
                 // Using GET with plain password as per the backend script's design
-                const url = `${GAS_API_URL}?action=login&wa=${encodeURIComponent(wa)}&password=${encodeURIComponent(password)}`;
+                const url = `${GAS_API_URL}?action=login&userid=${encodeURIComponent(userid)}&password=${encodeURIComponent(password)}`;
                 
                 const data = await fetchWithRetry(url, { method: 'GET' });
 
@@ -524,7 +528,7 @@
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
                     checkLoginStatus(); // Re-initialize app state
                 } else {
-                    showMessage('login-error-message', data.message || 'Login gagal. Cek nomor WA/Password.', true);
+                    showMessage('login-error-message', data.message || 'Login gagal. Cek User ID/Password.', true);
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -545,6 +549,7 @@
                 // Using GET with plain password
                 const params = new URLSearchParams({
                     action: 'register',
+                    userid: form['reg-userid'].value.trim(),
                     nama: form['reg-nama'].value.trim(),
                     wa: form['reg-wa'].value.trim(),
                     email: form['reg-email'].value.trim(),
@@ -933,7 +938,8 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">WA</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. WA</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -951,6 +957,7 @@
                 html += `
                     <tr>
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.nama}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.userid}</td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.wa}</td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.jabatan}</td>
                         <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${user.status}</span></td>
@@ -1099,3 +1106,4 @@
     </script>
 </body>
 </html>
+
