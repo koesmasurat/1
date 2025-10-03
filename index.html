@@ -198,12 +198,12 @@
                                 <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-amber-400">
-                                <p class="text-sm font-medium text-gray-200">Surat Belum Didisposisi</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-undisposed">0</p>
+                                <p class="text-sm font-medium text-gray-200">Inbox Belum Dibaca</p>
+                                <p class="text-3xl font-bold mt-1" id="stat-unread">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-rose-500">
-                                <p class="text-sm font-medium text-gray-200">Disposisi Belum Selesai</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-unfollowed">0</p>
+                                <p class="text-sm font-medium text-gray-200">Tugas Belum Selesai</p>
+                                <p class="text-3xl font-bold mt-1" id="stat-unfinished">0</p>
                             </div>
                         </div>
 
@@ -875,54 +875,45 @@
 
         async function openRiwayatModal(suratId, suratNomor) {
             const modal = document.getElementById('modal-riwayat');
-            const container = document.getElementById('riwayat-timeline-container');
-            
-            document.getElementById('riwayat-surat-nomor').textContent = `No. Surat: ${suratNomor}`;
-            container.innerHTML = '<p class="text-gray-200">Memuat riwayat surat...</p>';
-            modal.style.display = 'flex';
-            
-            try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_history&suratId=${suratId}`);
-                if (data.status === 'success') {
-                    renderRiwayat(container, data.history);
-                } else {
-                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat riwayat.'}</p>`;
-                }
-            } catch (error) {
-                console.error('Load History error:', error);
-                container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
-            }
-        }
-
-        function renderRiwayat(container, history) {
-            if (!history || history.length === 0) {
-                container.innerHTML = '<p class="text-gray-400">Tidak ada riwayat untuk surat ini.</p>';
-                return;
-            }
-
-            let html = '<div class="relative border-l-2 border-white/20 ml-3">';
-            
-            history.forEach((item) => {
-                html += `
-                    <div class="mb-8 ml-6">
-                        <span class="absolute flex items-center justify-center w-6 h-6 bg-amber-500 rounded-full -left-3 ring-4 ring-amber-900/50">
-                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
-                        </span>
-                        <h3 class="flex items-center mb-1 text-lg font-semibold text-white">${item.actor}</h3>
-                        <time class="block mb-2 text-sm font-normal leading-none text-gray-400">${new Date(item.timestamp).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}</time>
-                        <p class="mb-2 text-base font-normal text-gray-200">${item.action}</p>
-                        <p class="text-sm font-italic text-gray-300 bg-black/20 p-2 rounded-md">Catatan: ${item.detail}</p>
-                    </div>
-                `;
-            });
-
-            html += '</div>';
+// ... existing code ... -->
             container.innerHTML = html;
             lucide.createIcons();
         }
         
-        // --- OTHER FUNCTIONS (UNCHANGED) ---
-        async function loadDashboardData() { /* Omitted for brevity */ }
+        // --- OTHER FUNCTIONS (SOME CHANGED) ---
+        async function loadDashboardData() {
+            showLoading(true);
+            try {
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_dashboard_data&userId=${currentUser.id}`);
+                
+                if (data.status === 'success') {
+                    document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
+                    document.getElementById('stat-unread').textContent = data.stats.inboxBelumDibaca || 0;
+                    document.getElementById('stat-unfinished').textContent = data.stats.tugasBelumSelesai || 0;
+
+                    const container = document.getElementById('disposisi-list-dashboard');
+                    if (data.latestDisposisi && data.latestDisposisi.length > 0) {
+                         let html = '';
+                         data.latestDisposisi.slice(0, 5).forEach(d => {
+                            html += `
+                                <div class="p-3 border-b border-white/20 hover:bg-black/10 rounded-lg">
+                                    <p class="font-semibold text-white">${d.perihal}</p>
+                                    <p class="text-sm text-gray-200">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
+                                    Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400'}">${d.status_baca}</span></p>
+                                </div>
+                            `;
+                         });
+                         container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi atau notifikasi terbaru.</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Load Dashboard error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
         async function loadUserManagement() { /* Omitted for brevity */ }
         async function loadLogData() { /* Omitted for brevity */ }
         async function loadArsipData() { /* Omitted for brevity */ }
