@@ -32,7 +32,7 @@
 
         body { 
             font-family: 'Inter', sans-serif; 
-            background-image: url('https://images.unsplash.com/photo-1588345921523-c2dcdb7f1dcd?q=80&w=2670&auto=format&fit=crop');
+            background-image: url('https://images.unsplash.com/photo-1507525428034-b723a9ce6890?q=80&w=2670&auto=format&fit=crop');
             background-size: cover;
             background-attachment: fixed;
             background-position: center;
@@ -45,7 +45,7 @@
         }
         
         .glass-card {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(20, 10, 0, 0.4); /* Darker, warmer glass for better contrast */
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -84,31 +84,31 @@
     <!-- Main App Container -->
     <div id="app" class="flex">
         <!-- Sidebar -->
-        <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-64 glass-card z-40 m-2 rounded-2xl">
+        <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-64 glass-card z-40 m-2 rounded-2xl flex-shrink-0">
             <div class="p-6 border-b border-white/20">
                 <h1 class="text-xl font-bold text-white">SIMAS RSUD</h1>
-                <p class="text-sm text-gray-300">dr. R. Koesma</p>
+                <p class="text-sm text-gray-200">dr. R. Koesma</p>
             </div>
             <nav class="mt-6">
-                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
                 </a>
-                <a href="#surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="mail-check" class="w-5 h-5"></i><span>Surat Masuk</span>
                 </a>
-                <a href="#surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="send" class="w-5 h-5"></i><span>Surat Keluar</span>
                 </a>
-                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="layers-3" class="w-5 h-5"></i><span>Disposisi Saya</span>
                 </a>
-                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span>
                 </a>
-                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
                 </a>
-                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-200 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>
                 </a>
             </nav>
@@ -120,7 +120,7 @@
         </div>
         
         <!-- Content Area -->
-        <div id="content-area" class="flex-1 transition-all duration-300 p-4 md:p-8">
+        <div id="content-area" class="flex-1 transition-all duration-300 p-2 md:p-4">
             <button id="menu-toggle" class="md:hidden p-2 rounded-full glass-card mb-4 fixed top-4 right-4 z-50">
                 <i data-lucide="menu" class="w-6 h-6 text-white"></i>
             </button>
@@ -192,20 +192,20 @@
                 <!-- Dashboard Page -->
                 <div id="dashboard-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-2">Dashboard</h2>
-                    <p class="text-md text-gray-300 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
+                    <p class="text-md text-gray-200 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
                     <div id="dashboard-content">
                         <!-- Stats Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div class="p-6 glass-card border-t-4 border-sky-400">
-                                <p class="text-sm font-medium text-gray-300">Surat Masuk Bulan Ini</p>
+                                <p class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-amber-400">
-                                <p class="text-sm font-medium text-gray-300">Surat Belum Didisposisi</p>
+                                <p class="text-sm font-medium text-gray-200">Surat Belum Didisposisi</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-undisposed">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-rose-500">
-                                <p class="text-sm font-medium text-gray-300">Surat Belum Ditindaklanjuti</p>
+                                <p class="text-sm font-medium text-gray-200">Surat Belum Ditindaklanjuti</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-unfollowed">0</p>
                             </div>
                         </div>
@@ -214,7 +214,7 @@
                         <div class="p-6 glass-card">
                             <h3 class="text-xl font-semibold mb-4">Disposisi Terbaru untuk Anda</h3>
                             <div id="disposisi-list-dashboard">
-                                <p class="text-gray-300">Memuat data...</p>
+                                <p class="text-gray-200">Memuat data...</p>
                             </div>
                         </div>
                     </div>
@@ -231,7 +231,7 @@
                             <input type="text" id="search-surat" onkeyup="filterSurat('surat-masuk-list', this.value)" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 form-input rounded-md">
                         </div>
                         <div id="surat-masuk-list" class="overflow-x-auto">
-                            <p class="text-gray-300">Data surat masuk akan dimuat di sini...</p>
+                            <p class="text-gray-200">Data surat masuk akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
@@ -247,7 +247,7 @@
                             <input type="text" id="search-surat-keluar" onkeyup="filterSurat('surat-keluar-list', this.value)" placeholder="Cari: Nomor/Perihal/Penerima" class="w-full px-3 py-2 form-input rounded-md">
                         </div>
                         <div id="surat-keluar-list" class="overflow-x-auto">
-                            <p class="text-gray-300">Data surat keluar akan dimuat di sini...</p>
+                            <p class="text-gray-200">Data surat keluar akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
@@ -257,7 +257,7 @@
                     <h2 class="text-3xl font-bold mb-6">Disposisi Saya</h2>
                     <div class="p-6 glass-card">
                         <div id="my-disposisi-list" class="overflow-x-auto">
-                            <p class="text-gray-300">Daftar disposisi untuk Anda akan dimuat di sini...</p>
+                            <p class="text-gray-200">Daftar disposisi untuk Anda akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
@@ -265,10 +265,10 @@
                 <!-- Arsip Page -->
                 <div id="arsip-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Arsip Dokumen</h2>
-                    <p class="text-gray-300 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
+                    <p class="text-gray-200 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
                     <div class="p-6 glass-card">
                         <div id="arsip-list">
-                            <p class="text-gray-300">Data arsip akan dimuat di sini...</p>
+                            <p class="text-gray-200">Data arsip akan dimuat di sini...</p>
                         </div>
                     </div>
                 </div>
@@ -277,7 +277,7 @@
                 <div id="users-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Manajemen User</h2>
                     <div id="user-management-content" class="p-6 glass-card">
-                        <p class="text-gray-300">Daftar pengguna akan dimuat di sini...</p>
+                        <p class="text-gray-200">Daftar pengguna akan dimuat di sini...</p>
                     </div>
                 </div>
 
@@ -285,7 +285,7 @@
                 <div id="log-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Log Aktivitas</h2>
                     <div id="log-content" class="p-6 glass-card">
-                        <p class="text-gray-300">Log sistem akan dimuat di sini...</p>
+                        <p class="text-gray-200">Log sistem akan dimuat di sini...</p>
                     </div>
                 </div>
             </div>
@@ -458,24 +458,19 @@
         function checkLoginStatus() {
             const userData = localStorage.getItem('currentUser');
             const sidebarEl = document.getElementById('sidebar');
-            const contentAreaEl = document.getElementById('content-area');
 
             if (userData) {
                 currentUser = JSON.parse(userData);
                 document.getElementById('user-display-name').textContent = currentUser.nama;
                 document.getElementById('user-display-jabatan').textContent = currentUser.jabatan;
                 
-                contentAreaEl.classList.add('md:ml-[-15rem]'); // Adjust for new sidebar layout
                 sidebarEl.classList.remove('hidden');
 
                 const initialHash = window.location.hash.substring(1) || 'dashboard';
                 showPage(initialHash);
             } else {
                 currentUser = null;
-                
-                contentAreaEl.classList.remove('md:ml-[-15rem]');
                 sidebarEl.classList.add('hidden');
-                
                 showPage('login');
             }
             lucide.createIcons(); 
@@ -661,7 +656,7 @@
         async function loadSuratData(jenis) {
             const listId = jenis === 'Masuk' ? 'surat-masuk-list' : 'surat-keluar-list';
             const listContainer = document.getElementById(listId);
-            listContainer.innerHTML = '<p class="text-gray-300">Memuat data surat...</p>';
+            listContainer.innerHTML = '<p class="text-gray-200">Memuat data surat...</p>';
             
             showLoading(true);
             try {
@@ -683,7 +678,7 @@
         
         function renderSuratList(container, suratList, jenis) {
             if (!suratList || suratList.length === 0) {
-                container.innerHTML = '<p class="text-gray-300">Belum ada data surat.</p>';
+                container.innerHTML = '<p class="text-gray-200">Belum ada data surat.</p>';
                 return;
             }
 
@@ -691,12 +686,12 @@
             <table class="min-w-full divide-y divide-white/20">
                 <thead class="bg-black/20">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nomor Surat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Perihal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">${jenis === 'Masuk' ? 'Pengirim' : 'Penerima'}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tanggal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nomor Surat</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Perihal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">${jenis === 'Masuk' ? 'Pengirim' : 'Penerima'}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Tanggal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/20">
@@ -712,9 +707,9 @@
                 html += `
                     <tr data-search="${surat.nomor_surat} ${surat.perihal} ${surat.pengirim_penerima}" class="hover:bg-black/10">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${surat.nomor_surat}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.perihal}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.pengirim_penerima}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${surat.tanggal}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.perihal}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.pengirim_penerima}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.tanggal}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${surat.status}</span>
                         </td>
@@ -790,7 +785,7 @@
         
         async function loadMyDisposisi() {
             const container = document.getElementById('my-disposisi-list');
-            container.innerHTML = '<p class="text-gray-300">Memuat disposisi...</p>';
+            container.innerHTML = '<p class="text-gray-200">Memuat disposisi...</p>';
             
             showLoading(true);
             try {
@@ -811,7 +806,7 @@
 
         function renderMyDisposisiList(container, disposisiList) {
              if (!disposisiList || disposisiList.length === 0) {
-                container.innerHTML = '<p class="text-gray-300">Tidak ada disposisi baru untuk Anda.</p>';
+                container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi baru untuk Anda.</p>';
                 return;
             }
 
@@ -838,15 +833,15 @@
                         <div class="flex justify-between items-start">
                              <div>
                                 <p class="font-bold text-white">${d.nomor_surat}</p>
-                                <p class="text-sm text-gray-300">${d.perihal}</p>
-                                <p class="text-xs text-gray-400 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
+                                <p class="text-sm text-gray-200">${d.perihal}</p>
+                                <p class="text-xs text-gray-300 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${d.tanggal_disposisi}</p>
                             </div>
                             <div class="flex-shrink-0 ml-4">
                                 ${markTLSelect}
                             </div>
                         </div>
                         <div class="mt-3 p-3 bg-black/20 rounded-md">
-                            <p class="text-sm text-gray-200"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
+                            <p class="text-sm text-gray-100"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
                         </div>
                         <div class="mt-3 flex items-center space-x-4">
                             <a href="${d.file_url}" target="_blank" class="text-sm text-amber-400 hover:underline font-medium">Lihat File Surat</a>
@@ -909,14 +904,14 @@
                             html += `
                                 <div class="p-3 border-b border-white/20 hover:bg-black/10 rounded-lg">
                                     <p class="font-semibold text-white">${d.perihal}</p>
-                                    <p class="text-sm text-gray-300">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
+                                    <p class="text-sm text-gray-200">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
                                     Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400'}">${d.status_baca}</span></p>
                                 </div>
                             `;
                          });
                          container.innerHTML = html;
                     } else {
-                        container.innerHTML = '<p class="text-gray-300">Tidak ada disposisi atau notifikasi terbaru.</p>';
+                        container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi atau notifikasi terbaru.</p>';
                     }
                 }
             } catch (error) {
@@ -933,7 +928,7 @@
                 return;
             }
 
-            container.innerHTML = '<p class="text-gray-300">Memuat daftar user...</p>';
+            container.innerHTML = '<p class="text-gray-200">Memuat daftar user...</p>';
             showLoading(true);
             try {
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
@@ -953,16 +948,16 @@
         
         function renderUserList(container, userList) {
             let html = `
-            <p class="text-sm text-gray-300 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
+            <p class="text-sm text-gray-200 mb-4">Hanya Admin yang dapat mereset password user. Password akan di-reset menjadi 'password123'.</p>
             <table class="min-w-full divide-y divide-white/20">
                 <thead class="bg-black/20">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nama</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">No. WA</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Jabatan</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">No. WA</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Jabatan</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/20">
@@ -977,9 +972,9 @@
                 html += `
                     <tr class="hover:bg-black/10">
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">${user.nama}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.userid}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.wa}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${user.jabatan}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.userid}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.wa}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">${user.jabatan}</td>
                         <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${user.status}</span></td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">${actionButton}</td>
                     </tr>
@@ -1042,7 +1037,7 @@
                 container.innerHTML = '<p class="text-red-400 font-semibold">Hanya Admin yang dapat melihat Log Aktivitas.</p>';
                 return;
             }
-            container.innerHTML = '<p class="text-gray-300">Memuat log aktivitas...</p>';
+            container.innerHTML = '<p class="text-gray-200">Memuat log aktivitas...</p>';
             
             showLoading(true);
             try {
@@ -1063,7 +1058,7 @@
 
         function renderLogList(container, logList) {
             if (!logList || logList.length === 0) {
-                container.innerHTML = '<p class="text-gray-300">Log masih kosong.</p>';
+                container.innerHTML = '<p class="text-gray-200">Log masih kosong.</p>';
                 return;
             }
 
@@ -1071,10 +1066,10 @@
             <table class="min-w-full divide-y divide-white/20">
                 <thead class="bg-black/20">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Timestamp</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Detail</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Detail</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/20">
@@ -1083,10 +1078,10 @@
             logList.slice().reverse().slice(0, 100).forEach(log => { // Show 100 newest logs
                 html += `
                     <tr class="hover:bg-black/10">
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-400">${log.timestamp}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-400">${log.user}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-300">${log.timestamp}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-300">${log.user}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-white">${log.action}</td>
-                        <td class="px-4 py-2 text-xs text-gray-400 break-all">${log.detail}</td>
+                        <td class="px-4 py-2 text-xs text-gray-300 break-all">${log.detail}</td>
                     </tr>
                 `;
             });
@@ -1097,7 +1092,7 @@
 
         async function loadArsipData() {
              const container = document.getElementById('arsip-list');
-             container.innerHTML = '<p class="text-gray-300">Memuat link folder arsip...</p>';
+             container.innerHTML = '<p class="text-gray-200">Memuat link folder arsip...</p>';
             
              showLoading(true);
              try {
@@ -1105,12 +1100,12 @@
                 
                  if (data.status === 'success' && data.link) {
                      container.innerHTML = `
-                         <p class="mb-4 text-gray-200">Akses semua file arsip Anda di Google Drive melalui link berikut:</p>
+                         <p class="mb-4 text-gray-100">Akses semua file arsip Anda di Google Drive melalui link berikut:</p>
                          <a href="${data.link}" target="_blank" class="text-white hover:text-amber-300 font-bold text-lg p-4 border border-white/20 rounded-lg bg-black/20 inline-flex items-center space-x-2 transition-colors">
                              <i data-lucide="folder-open" class="w-6 h-6"></i>
                              <span>Buka Folder Arsip Google Drive</span>
                          </a>
-                         <p class="mt-4 text-sm text-gray-400 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
+                         <p class="mt-4 text-sm text-gray-300 italic">Catatan: Pastikan Anda login dengan akun Google yang memiliki akses ke folder tersebut.</p>
                      `;
                      lucide.createIcons();
                  } else {
