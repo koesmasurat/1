@@ -102,7 +102,7 @@
 
             <div id="pages-container">
                 <div id="login-page" class="page max-w-md mx-auto mt-20 p-8 glass-card">
-<div class="flex justify-center mb-4"><img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-20 h-20 rounded-full"></div>
+                    <div class="flex justify-center mb-4"><img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-20 h-20 rounded-full"></div>
 
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Login SIMAS RSUD</h2>
                     <p class="text-sm text-center text-red-400 mb-4" id="login-error-message"></p>
@@ -121,8 +121,7 @@
                 </div>
                 
                 <div id="register-page" class="page max-w-lg mx-auto mt-10 p-8 glass-card hidden">
-<div class="flex justify-center mb-4"><img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-20 h-20 rounded-full"></div>
-
+                    <div class="flex justify-center mb-4"><img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-20 h-20 rounded-full"></div>
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Pendaftaran Akun Baru</h2>
                     <p class="text-sm text-center text-red-400 mb-4" id="register-error-message"></p>
                     <form id="register-form">
@@ -287,9 +286,14 @@
                 <div id="disposisi-page" class="page hidden text-white">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold">Inbox Disposisi</h2>
-                        <button onclick="loadMyDisposisi(1)" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
-                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> Refresh Data
-                        </button>
+                        <div class="flex items-center">
+                             <button id="btn-atur-target" style="display: none;" onclick="openDisposisiSettingsModal()" class="bg-blue-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-150 flex items-center mr-2">
+                                <i data-lucide="settings-2" class="w-5 h-5 mr-2"></i> Atur Tujuan Cepat
+                            </button>
+                            <button onclick="loadMyDisposisi(1)" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                                <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> Refresh Data
+                            </button>
+                        </div>
                     </div>
                     <div class="p-6 glass-card">
                         <div class="mb-4 flex gap-2">
@@ -456,13 +460,46 @@
         </div>
     </div>
 
+    <!-- NEW MODAL for DISPOSITION TARGET SETTINGS -->
+    <div id="modal-disposisi-settings" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-6 w-full max-w-4xl glass-card">
+            <h3 class="text-xl font-bold text-white mb-4">Atur Tujuan Disposisi Cepat</h3>
+            <p class="text-gray-300 text-sm mb-6">Pilih staf yang akan muncul sebagai pilihan utama saat Anda melakukan disposisi. Ini akan mempercepat alur kerja Anda.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh]">
+                <!-- Kolom Kiri: Staf yang Tersedia -->
+                <div>
+                    <h4 class="font-semibold text-white mb-2">Staf Tersedia</h4>
+                    <div id="available-staff-list" class="bg-black/20 p-3 rounded-lg overflow-y-auto h-full min-h-[40vh]">
+                        <p class="text-gray-400">Memuat...</p>
+                    </div>
+                </div>
+                <!-- Kolom Kanan: Target yang Dipilih -->
+                <div>
+                    <h4 class="font-semibold text-white mb-2">Tujuan Disposisi Anda</h4>
+                    <div id="selected-targets-list" class="bg-black/20 p-3 rounded-lg overflow-y-auto h-full min-h-[40vh]">
+                         <p class="text-gray-400">Pilih staf dari kolom kiri untuk ditambahkan.</p>
+                    </div>
+                </div>
+            </div>
+             <div id="settings-form-message" class="text-sm text-green-400 my-4 text-center"></div>
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" onclick="document.getElementById('modal-disposisi-settings').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
+                <button type="button" onclick="handleSaveTargets()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan Pengaturan</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
         let currentUser = null;
-        let allUsers = [];
         let confirmCallback = null;
         const ITEMS_PER_PAGE = 10;
         const DEFAULT_PIC = 'https://ui-avatars.com/api/?background=f59e0b&color=fff&size=128';
+        
+        // State for disposition settings modal
+        let availableStaff = [];
+        let selectedTargets = [];
 
         // --- UTILITY FUNCTIONS ---
         function showMessage(elementId, message, isError = true) {
@@ -550,11 +587,15 @@
         // --- AUTH & UI LOGIC ---
         function updateUIVisibility() {
             const isAdmin = currentUser && [0, 1].includes(parseInt(currentUser.level));
+            const isLevel4 = currentUser && parseInt(currentUser.level) === 4;
+
             document.getElementById('btn-tambah-surat').style.display = isAdmin ? 'flex' : 'none';
             document.getElementById('nav-surat-masuk').style.display = isAdmin ? 'flex' : 'none';
             document.getElementById('nav-users').style.display = isAdmin ? 'flex' : 'none';
             document.getElementById('nav-log').style.display = isAdmin ? 'flex' : 'none';
             document.getElementById('nav-surat-keluar').style.display = 'none';
+            
+            document.getElementById('btn-atur-target').style.display = isLevel4 ? 'flex' : 'none';
             
             const isAdminOrTU = [0, 1].includes(parseInt(currentUser.level));
             const cardTitleEl = document.getElementById('dashboard-card-title-surat-masuk');
@@ -632,6 +673,8 @@
             document.getElementById('profile-pic-input').addEventListener('change', handleProfilePicChange);
         });
 
+        // --- API & DATA HANDLING ---
+        // ... (handleLogin, handleRegister, etc. tetap sama)
         // --- API & DATA HANDLING ---
         async function handleLogin(e) {
             e.preventDefault();
@@ -814,23 +857,30 @@
             showMessage('dispo-form-message', '', false);
 
             try {
-                const userData = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
-                if (userData.status === 'success') {
-                    allUsers = userData.users;
-                } else {
-                    throw new Error(userData.message || 'Gagal memuat pengguna.');
-                }
-
-                recipientList.innerHTML = ''; 
                 const userLevel = parseInt(currentUser.level);
-                let targetLevels = [];
+                let recipients = [];
+
+                if (userLevel === 4) { // Kabag/Kabid
+                    const targetData = await fetchWithRetry(`${GAS_API_URL}?action=get_disposisi_targets&userId=${currentUser.id}`);
+                    if(targetData.status === 'success') {
+                        recipients = targetData.targets;
+                    } else {
+                        throw new Error(targetData.message);
+                    }
+                } else { // Level lain
+                    const userData = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
+                    if (userData.status === 'success') {
+                        let targetLevels = [];
+                        if (userLevel === 2) targetLevels = [3, 4];
+                        else if (userLevel === 3) targetLevels = [4];
+                        
+                        recipients = userData.users.filter(u => targetLevels.includes(parseInt(u.level)) && u.status === 'Aktif');
+                    } else {
+                        throw new Error(userData.message || 'Gagal memuat pengguna.');
+                    }
+                }
                 
-                if (userLevel === 2) targetLevels = [3, 4]; // Direktur -> Wadir (3) ATAU Kabag/Kabid (4)
-                else if (userLevel === 3) targetLevels = [4];
-                else if (userLevel === 4) targetLevels = [5, 6];
-                
-                const recipients = allUsers.filter(u => targetLevels.includes(parseInt(u.level)) && u.status === 'Aktif');
-                
+                recipientList.innerHTML = ''; 
                 if (recipients.length > 0) {
                     recipients.forEach(user => {
                         recipientList.innerHTML += `
@@ -840,7 +890,10 @@
                             </label>`;
                     });
                 } else {
-                    recipientList.innerHTML = '<p class="text-gray-400">Tidak ada pengguna aktif di level selanjutnya untuk menerima disposisi.</p>';
+                     const message = userLevel === 4 
+                        ? 'Tidak ada tujuan disposisi cepat yang diatur. Silakan atur terlebih dahulu.' 
+                        : 'Tidak ada pengguna aktif di level selanjutnya untuk menerima disposisi.';
+                    recipientList.innerHTML = `<p class="text-gray-400">${message}</p>`;
                 }
 
             } catch(error) {
@@ -1512,6 +1565,107 @@
                 }
             });
         }
+        
+        // --- NEW FUNCTIONS FOR DISPOSITION TARGETS ---
+        async function openDisposisiSettingsModal() {
+            const modal = document.getElementById('modal-disposisi-settings');
+            const availableContainer = document.getElementById('available-staff-list');
+            const selectedContainer = document.getElementById('selected-targets-list');
+            
+            modal.style.display = 'flex';
+            availableContainer.innerHTML = '<p class="text-gray-400">Memuat staf...</p>';
+            selectedContainer.innerHTML = '<p class="text-gray-400">Memuat target...</p>';
+            showMessage('settings-form-message', '', false);
+
+            try {
+                const [staffRes, targetsRes] = await Promise.all([
+                    fetchWithRetry(`${GAS_API_URL}?action=get_staff_list&userId=${currentUser.id}`),
+                    fetchWithRetry(`${GAS_API_URL}?action=get_disposisi_targets&userId=${currentUser.id}`)
+                ]);
+
+                if (staffRes.status !== 'success' || targetsRes.status !== 'success') {
+                    throw new Error('Gagal memuat data pengaturan.');
+                }
+                
+                selectedTargets = targetsRes.targets || [];
+                const selectedIds = new Set(selectedTargets.map(t => t.id));
+                availableStaff = (staffRes.staff || []).filter(s => !selectedIds.has(s.id));
+
+                renderTargetLists();
+
+            } catch (error) {
+                availableContainer.innerHTML = `<p class="text-red-400">${error.message}</p>`;
+                selectedContainer.innerHTML = `<p class="text-red-400">${error.message}</p>`;
+            }
+        }
+
+        function renderTargetLists() {
+            const availableContainer = document.getElementById('available-staff-list');
+            const selectedContainer = document.getElementById('selected-targets-list');
+            
+            availableContainer.innerHTML = availableStaff.length > 0 
+                ? availableStaff.map(s => `
+                    <div id="avail-${s.id}" class="flex justify-between items-center p-2 rounded-md hover:bg-white/10 text-white">
+                        <span>${s.nama} <span class="text-xs text-gray-400">(${s.jabatan})</span></span>
+                        <button onclick="addTarget('${s.id}')" class="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Tambah</button>
+                    </div>`).join('')
+                : '<p class="text-gray-400">Semua staf telah ditambahkan.</p>';
+
+            selectedContainer.innerHTML = selectedTargets.length > 0
+                ? selectedTargets.map(t => `
+                    <div id="select-${t.id}" class="flex justify-between items-center p-2 rounded-md hover:bg-white/10 text-white">
+                        <span>${t.nama} <span class="text-xs text-gray-400">(${t.jabatan})</span></span>
+                        <button onclick="removeTarget('${t.id}')" class="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md">Hapus</button>
+                    </div>`).join('')
+                : '<p class="text-gray-400">Belum ada tujuan yang dipilih.</p>';
+        }
+
+        function addTarget(userId) {
+            const userIndex = availableStaff.findIndex(s => s.id === userId);
+            if (userIndex > -1) {
+                const [user] = availableStaff.splice(userIndex, 1);
+                selectedTargets.push(user);
+                selectedTargets.sort((a,b) => a.nama.localeCompare(b.nama));
+                renderTargetLists();
+            }
+        }
+
+        function removeTarget(userId) {
+            const userIndex = selectedTargets.findIndex(t => t.id === userId);
+            if (userIndex > -1) {
+                const [user] = selectedTargets.splice(userIndex, 1);
+                availableStaff.push(user);
+                availableStaff.sort((a,b) => a.nama.localeCompare(b.nama));
+                renderTargetLists();
+            }
+        }
+
+        async function handleSaveTargets() {
+            showLoading(true);
+            const targetIds = selectedTargets.map(t => t.id);
+            const payload = {
+                action: 'save_disposisi_targets',
+                userId: currentUser.id,
+                targetIds: targetIds
+            };
+            try {
+                const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                 if (result.status === 'success') {
+                    showMessage('settings-form-message', result.message, false);
+                    setTimeout(() => {
+                        document.getElementById('modal-disposisi-settings').style.display = 'none';
+                    }, 1500);
+                } else {
+                    showMessage('settings-form-message', result.message || 'Gagal menyimpan.', true);
+                }
+            } catch(error) {
+                showMessage('settings-form-message', 'Terjadi kesalahan jaringan.', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
     </script>
 </body>
 </html>
