@@ -104,10 +104,10 @@
                 <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span>
                 </a>
-                <a href="#users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#users" id="nav-users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
                 </a>
-                <a href="#log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
+                <a href="#log" id="nav-log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
                     <i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>
                 </a>
             </nav>
@@ -304,8 +304,8 @@
                 <!-- User Management Page -->
                 <div id="users-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Manajemen User</h2>
-                    <div id="user-management-content" class="p-6 glass-card">
-                        <p class="text-gray-200">Daftar pengguna akan dimuat di sini...</p>
+                    <div id="user-management-content" class="p-6 glass-card overflow-x-auto">
+                        <!-- User list rendered here by JS -->
                     </div>
                 </div>
 
@@ -520,9 +520,11 @@
         // --- AUTHENTICATION & UI LOGIC ---
 
         function updateUIVisibility() {
-            const isAdminTU = currentUser && (currentUser.jabatan === 'Admin TU' || currentUser.jabatan === 'Super Admin');
-            document.getElementById('btn-tambah-surat').style.display = isAdminTU ? 'flex' : 'none';
-            document.getElementById('nav-surat-masuk').style.display = isAdminTU ? 'flex' : 'none';
+            const isLevel0 = currentUser && currentUser.level == 0;
+            document.getElementById('btn-tambah-surat').style.display = isLevel0 ? 'flex' : 'none';
+            document.getElementById('nav-surat-masuk').style.display = isLevel0 ? 'flex' : 'none';
+            document.getElementById('nav-users').style.display = isLevel0 ? 'flex' : 'none';
+            document.getElementById('nav-log').style.display = isLevel0 ? 'flex' : 'none';
             document.getElementById('nav-surat-keluar').style.display = 'none';
         }
 
@@ -1087,7 +1089,110 @@
                 showLoading(false);
             }
         }
-        async function loadUserManagement() { /* Omitted for brevity */ }
+        async function loadUserManagement() {
+            const container = document.getElementById('user-management-content');
+            container.innerHTML = '<p class="text-gray-200">Memuat daftar pengguna...</p>';
+            showLoading(true);
+            try {
+                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
+                if (data.status === 'success') {
+                    renderUserManagementList(container, data.users);
+                } else {
+                    container.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data pengguna.'}</p>`;
+                }
+            } catch (error) {
+                console.error('Load Users error:', error);
+                container.innerHTML = `<p class="text-red-400">Kesalahan Jaringan: ${error.message}</p>`;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderUserManagementList(container, users) {
+             if (!users || users.length === 0) {
+                container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada data pengguna.</p>';
+                return;
+            }
+
+            let html = `
+            <table class="min-w-full divide-y divide-white/20">
+                <thead class="bg-black/20">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama Lengkap</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Jabatan</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/20">
+            `;
+
+            users.forEach(user => {
+                const statusClass = user.status === 'Aktif' ? 'bg-green-500/80' : 'bg-red-500/80';
+                const toggleStatusText = user.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan';
+                const toggleBtnClass = user.status === 'Aktif' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-sky-600 hover:bg-sky-700';
+
+                html += `
+                    <tr class="hover:bg-black/10">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${user.nama}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${user.userid}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${user.jabatan} (Lvl ${user.level})</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass} text-white">${user.status}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                           <button onclick="handleUserAction('${user.id}', 'reset_password')" class="px-3 py-1 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-xs">Reset Pass</button>
+                           <button onclick="handleUserAction('${user.id}', 'toggle_status', '${user.status}')" class="px-3 py-1 rounded-md text-white ${toggleBtnClass} text-xs">${toggleStatusText}</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function handleUserAction(targetUserId, action, currentValue) {
+            if (action === 'reset_password') {
+                showCustomConfirm('Anda yakin ingin mereset password user ini menjadi "password123"?', (confirmed) => {
+                    if (confirmed) performUserAction(targetUserId, 'reset_password');
+                });
+            } else if (action === 'toggle_status') {
+                const newStatus = currentValue === 'Aktif' ? 'Nonaktif' : 'Aktif';
+                showCustomConfirm(`Anda yakin ingin mengubah status user ini menjadi "${newStatus}"?`, (confirmed) => {
+                     if (confirmed) performUserAction(targetUserId, 'update_user_status', newStatus);
+                });
+            }
+        }
+        
+        async function performUserAction(targetUserId, actionType, newValue = null) {
+            showLoading(true);
+            try {
+                const payload = { 
+                    action: actionType, 
+                    adminUserId: currentUser.id, 
+                    targetUserId: targetUserId 
+                };
+                if(actionType === 'update_user_status') {
+                    payload.newStatus = newValue;
+                }
+
+                const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                
+                if (result.status === 'success') {
+                    showCustomAlert(result.message, 'Berhasil');
+                    loadUserManagement();
+                } else {
+                    showCustomAlert(result.message || 'Terjadi kesalahan.', 'Gagal');
+                }
+            } catch (error) {
+                 showCustomAlert('Terjadi kesalahan jaringan atau server.', 'Error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
         async function loadLogData() { /* Omitted for brevity */ }
         async function loadArsipData() { /* Omitted for brevity */ }
 
