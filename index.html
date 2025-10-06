@@ -175,18 +175,14 @@
                     </div>
                     <p class="text-md text-gray-200 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
                     <div id="dashboard-content">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                             <div class="p-6 glass-card border-t-4 border-sky-400">
                                 <p id="dashboard-card-title-surat-masuk" class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-amber-400">
-                                <p class="text-sm font-medium text-gray-200">Inbox Belum Dibaca</p>
+                                <p class="text-sm font-medium text-gray-200">Tugas Belum Ditindaklanjuti</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-unread">0</p>
-                            </div>
-                            <div class="p-6 glass-card border-t-4 border-rose-500">
-                                <p class="text-sm font-medium text-gray-200">Tugas Belum Selesai</p>
-                                <p class="text-3xl font-bold mt-1" id="stat-unfinished">0</p>
                             </div>
                         </div>
                         <div class="p-6 glass-card">
@@ -605,7 +601,7 @@
                         case 'users': loadUserManagement(); break;
                         case 'profil': loadProfileData(); break;
                         case 'log': loadLogData(); break;
-                        case 'arsip': loadArsipData(1); break; // <-- PERUBAHAN DI SINI
+                        case 'arsip': loadArsipData(1); break;
                     }
                 }
             } else if (pageId === 'login' || pageId === 'register') {
@@ -876,7 +872,9 @@
                     document.getElementById('form-disposisi').reset();
                     document.getElementById('modal-disposisi').style.display='none';
                     loadMyDisposisi(1);
-                    loadSuratData('Masuk', 1); // <-- Tambahan: Muat ulang daftar surat masuk
+                    if (currentUser && [0,1].includes(parseInt(currentUser.level))) {
+                        loadSuratData('Masuk', 1);
+                    }
                 } else {
                     showMessage('dispo-form-message', result.message || 'Gagal mengirim disposisi.', true);
                 }
@@ -915,7 +913,7 @@
         }
         function renderMyDisposisiList(container, disposisiList) {
              if (!disposisiList || disposisiList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada disposisi yang ditemukan.</p>';
+                container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada disposisi yang perlu ditindaklanjuti.</p>';
                 return;
             }
             let html = `<div class="space-y-4">`;
@@ -1067,7 +1065,6 @@
                 if (data.status === 'success') {
                     document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
                     document.getElementById('stat-unread').textContent = data.stats.inboxBelumDibaca || 0;
-                    document.getElementById('stat-unfinished').textContent = data.stats.tugasBelumSelesai || 0;
                     const container = document.getElementById('disposisi-list-dashboard');
                     if (data.latestDisposisi && data.latestDisposisi.length > 0) {
                          let html = '';
@@ -1518,3 +1515,4 @@
     </script>
 </body>
 </html>
+
