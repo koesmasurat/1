@@ -303,7 +303,12 @@
                 
                 <!-- User Management Page -->
                 <div id="users-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Manajemen User</h2>
+                     <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold">Manajemen User</h2>
+                        <button onclick="openUserModal()" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                            <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Tambah User Baru
+                        </button>
+                    </div>
                     <div id="user-management-content" class="p-6 glass-card overflow-x-auto">
                         <!-- User list rendered here by JS -->
                     </div>
@@ -380,6 +385,55 @@
             </form>
         </div>
     </div>
+    
+    <!-- MODAL: Add/Edit User -->
+    <div id="modal-user-form" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
+        <div class="relative p-6 w-full max-w-lg glass-card">
+            <h3 id="user-form-title" class="text-xl font-bold mb-4 text-white">Form User</h3>
+            <form id="user-form">
+                <input type="hidden" id="user-form-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="user-form-nama" class="block text-sm font-medium text-gray-200">Nama Lengkap</label>
+                        <input type="text" id="user-form-nama" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="user-form-userid" class="block text-sm font-medium text-gray-200">User ID (untuk login)</label>
+                        <input type="text" id="user-form-userid" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="user-form-jabatan-level" class="block text-sm font-medium text-gray-200">Jabatan & Level</label>
+                        <select id="user-form-jabatan-level" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
+                            <option value="">Pilih Jabatan</option>
+                            <option value='{"jabatan": "Super Admin", "level": 0}'>Super Admin (Level 0)</option>
+                            <option value='{"jabatan": "Admin TU", "level": 0}'>Admin TU (Level 0)</option>
+                            <option value='{"jabatan": "Direktur", "level": 1}'>Direktur (Level 1)</option>
+                            <option value='{"jabatan": "Wadir Adminkeu", "level": 2}'>Wadir Adminkeu (Level 2)</option>
+                            <option value='{"jabatan": "Kabag", "level": 3}'>Kabag (Level 3)</option>
+                            <option value='{"jabatan": "Kabid", "level": 3}'>Kabid (Level 3)</option>
+                            <option value='{"jabatan": "JFT", "level": 4}'>JFT (Level 4)</option>
+                            <option value='{"jabatan": "Staf", "level": 5}'>Staf (Level 5)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="user-form-wa" class="block text-sm font-medium text-gray-200">Nomor WA</label>
+                        <input type="text" id="user-form-wa" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm" placeholder="6281xxxx">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="user-form-email" class="block text-sm font-medium text-gray-200">Email (Opsional)</label>
+                        <input type="email" id="user-form-email" class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
+                    </div>
+                </div>
+                <p id="user-form-notice" class="text-xs text-amber-300 mt-4 hidden">Password akan diatur default menjadi 'password123'. User dapat meresetnya nanti.</p>
+                <div id="user-form-message" class="text-sm text-red-400 my-4"></div>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="button" onclick="document.getElementById('modal-user-form').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <!-- MODAL: Custom Alert/Confirm -->
     <div id="modal-custom" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
@@ -423,7 +477,7 @@
             const el = document.getElementById(elementId);
             if(el) {
                 el.textContent = message;
-                el.className = `text-sm mb-4 ${isError ? 'text-red-400' : 'text-green-400'}`;
+                el.className = `text-sm my-4 ${isError ? 'text-red-400' : 'text-green-400'}`;
                 el.classList.toggle('hidden', !message);
             }
         }
@@ -593,6 +647,7 @@
             document.getElementById('register-form').addEventListener('submit', handleRegister);
             document.getElementById('form-surat').addEventListener('submit', handleSuratSubmit);
             document.getElementById('form-disposisi').addEventListener('submit', handleDisposisiSubmit);
+            document.getElementById('user-form').addEventListener('submit', handleUserFormSubmit);
             document.getElementById('search-surat-masuk').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('surat-masuk'); });
             document.getElementById('search-disposisi').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('disposisi'); });
         });
@@ -873,9 +928,8 @@
             
             showLoading(true);
             try {
-                const [userData] = await Promise.all([
-                    fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`)
-                ]);
+                // We need all users for the disposisi modal, so fetch them regardless of the current user's level
+                const userData = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
                 if (userData.status === 'success') allUsers = userData.users;
 
                 const url = `${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}&page=${page}&limit=${ITEMS_PER_PAGE}&searchTerm=${encodeURIComponent(searchTerm)}`;
@@ -1055,7 +1109,7 @@
             lucide.createIcons();
         }
         
-        // --- OTHER FUNCTIONS ---
+        // --- ADMIN / USER MANAGEMENT FUNCTIONS ---
         async function loadDashboardData() { 
             showLoading(true);
             try {
@@ -1142,6 +1196,7 @@
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass} text-white">${user.status}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                           <button onclick="openUserModal('${user.id}')" class="px-3 py-1 rounded-md text-white bg-blue-600 hover:bg-blue-700 text-xs">Edit</button>
                            <button onclick="handleUserAction('${user.id}', 'reset_password')" class="px-3 py-1 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-xs">Reset Pass</button>
                            <button onclick="handleUserAction('${user.id}', 'toggle_status', '${user.status}')" class="px-3 py-1 rounded-md text-white ${toggleBtnClass} text-xs">${toggleStatusText}</button>
                         </td>
@@ -1153,13 +1208,95 @@
             container.innerHTML = html;
         }
 
+        async function openUserModal(userId = null) {
+            const modal = document.getElementById('modal-user-form');
+            const form = document.getElementById('user-form');
+            form.reset();
+            document.getElementById('user-form-id').value = '';
+            showMessage('user-form-message', '', false);
+
+            if (userId) { // Editing existing user
+                document.getElementById('user-form-title').textContent = 'Edit User';
+                document.getElementById('user-form-notice').classList.add('hidden');
+                document.getElementById('user-form-id').value = userId;
+                
+                showLoading(true);
+                try {
+                    const data = await fetchWithRetry(`${GAS_API_URL}?action=get_user_details&userId=${currentUser.id}&targetUserId=${userId}`);
+                    if (data.status === 'success') {
+                        const user = data.user;
+                        document.getElementById('user-form-nama').value = user.nama;
+                        document.getElementById('user-form-userid').value = user.userid;
+                        document.getElementById('user-form-wa').value = user.wa;
+                        document.getElementById('user-form-email').value = user.email || '';
+                        
+                        const roleValue = JSON.stringify({ jabatan: user.jabatan, level: user.level });
+                        document.getElementById('user-form-jabatan-level').value = roleValue;
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    showCustomAlert(`Gagal memuat data user: ${error.message}`, 'Error');
+                    return;
+                } finally {
+                    showLoading(false);
+                }
+
+            } else { // Adding new user
+                document.getElementById('user-form-title').textContent = 'Tambah User Baru';
+                document.getElementById('user-form-notice').classList.remove('hidden');
+            }
+            modal.style.display = 'flex';
+        }
+
+        async function handleUserFormSubmit(e) {
+            e.preventDefault();
+            const targetUserId = document.getElementById('user-form-id').value;
+            const isEditing = !!targetUserId;
+
+            const roleDataEl = document.getElementById('user-form-jabatan-level');
+            if (!roleDataEl.value) {
+                showMessage('user-form-message', 'Jabatan & Level harus dipilih.', true);
+                return;
+            }
+            const { jabatan, level } = JSON.parse(roleDataEl.value);
+
+            const payload = {
+                action: isEditing ? 'edit_user' : 'register',
+                adminUserId: currentUser.id,
+                targetUserId: targetUserId, // Will be ignored by 'register' action
+                nama: document.getElementById('user-form-nama').value.trim(),
+                userid: document.getElementById('user-form-userid').value.trim(),
+                wa: document.getElementById('user-form-wa').value.trim(),
+                email: document.getElementById('user-form-email').value.trim(),
+                jabatan: jabatan,
+                level: level,
+            };
+
+            showLoading(true);
+            try {
+                const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                if (result.status === 'success') {
+                    document.getElementById('modal-user-form').style.display = 'none';
+                    showCustomAlert(result.message, 'Berhasil');
+                    loadUserManagement();
+                } else {
+                    showMessage('user-form-message', result.message || 'Terjadi kesalahan.', true);
+                }
+            } catch (error) {
+                showMessage('user-form-message', 'Terjadi kesalahan jaringan atau server.', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
         function handleUserAction(targetUserId, action, currentValue) {
             if (action === 'reset_password') {
                 showCustomConfirm('Anda yakin ingin mereset password user ini menjadi "password123"?', (confirmed) => {
                     if (confirmed) performUserAction(targetUserId, 'reset_password');
                 });
             } else if (action === 'toggle_status') {
-                const newStatus = currentValue === 'Aktif' ? 'Nonaktif' : 'Aktif';
+                const newStatus = currentValue === 'Aktif' ? 'Nonaktif' : 'Aktifkan';
                 showCustomConfirm(`Anda yakin ingin mengubah status user ini menjadi "${newStatus}"?`, (confirmed) => {
                      if (confirmed) performUserAction(targetUserId, 'update_user_status', newStatus);
                 });
