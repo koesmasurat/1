@@ -81,7 +81,8 @@
                 <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span></a>
                 <a href="#profil" onclick="showPage('profil')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="user-circle" class="w-5 h-5"></i><span>Profil Saya</span></a>
                 <a href="#users" id="nav-users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span></a>
-                </nav>
+                <a href="#log" id="nav-log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span></a>
+            </nav>
             <div class="p-6 w-full border-t border-white/20 flex-shrink-0">
                 <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-400 hover:text-red-300 transition duration-150"><i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span></button>
             </div>
@@ -127,6 +128,7 @@
                                     <option value="">Pilih Jabatan</option>
                                     <option value='{"jabatan": "Direktur", "level": 2}'>Direktur (Level 2)</option>
                                     <option value='{"jabatan": "Wadir Adminkeu", "level": 3}'>Wadir Adminkeu (Level 3)</option>
+<option value='{\"jabatan\": \"Wadir Pelayanan\", \"level\": 3}'>Wadir Pelayanan (Level 3)</option>
                                     <option value='{"jabatan": "Kabag", "level": 4}'>Kabag (Level 4)</option>
                                     <option value='{"jabatan": "Kabid", "level": 4}'>Kabid (Level 4)</option>
                                     <option value='{"jabatan": "JFT", "level": 5}'>JFT (Level 5)</option>
@@ -310,6 +312,9 @@
                     <div id="user-management-content" class="p-6 glass-card overflow-x-auto"></div>
                 </div>
                 
+                <div id="log-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Log Aktivitas Sistem</h2>
+                    <div id="log-content" class="p-6 glass-card" style="max-height: 80vh; overflow-y: auto;"></div>
                 </div>
             </div>
         </div>
@@ -392,6 +397,7 @@
                             <option value='{"jabatan": "Admin TU", "level": 1}'>Admin TU (Level 1)</option>
                             <option value='{"jabatan": "Direktur", "level": 2}'>Direktur (Level 2)</option>
                             <option value='{"jabatan": "Wadir Adminkeu", "level": 3}'>Wadir Adminkeu (Level 3)</option>
+<option value='{\"jabatan\": \"Wadir Pelayanan\", \"level\": 3}'>Wadir Pelayanan (Level 3)</option>
                             <option value='{"jabatan": "Kabag", "level": 4}'>Kabag (Level 4)</option>
                             <option value='{"jabatan": "Kabid", "level": 4}'>Kabid (Level 4)</option>
                             <option value='{"jabatan": "JFT", "level": 5}'>JFT (Level 5)</option>
@@ -526,62 +532,13 @@
         }
 
         // --- AUTH & UI LOGIC ---
-        // --- ADMIN-ONLY LOG UI CREATION ---
-        function ensureAdminLogUIExists() {
-            // Create nav link if missing
-            if (!document.getElementById('nav-log')) {
-                const nav = document.querySelector('#sidebar nav');
-                if (nav) {
-                    const a = document.createElement('a');
-                    a.href = '#log';
-                    a.id = 'nav-log';
-                    a.onclick = function(){ showPage('log'); };
-                    a.className = 'nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3';
-                    a.innerHTML = '<i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>';
-                    nav.appendChild(a);
-                    lucide.createIcons();
-                }
-            }
-            // Create page content if missing
-            if (!document.getElementById('log-page')) {
-                const pages = document.getElementById('pages-container');
-                if (pages) {
-                    const wrapper = document.createElement('div');
-                    wrapper.id = 'log-page';
-                    wrapper.className = 'page hidden text-white';
-                    wrapper.innerHTML = `
-                        <h2 class="text-3xl font-bold mb-6">Log Aktivitas Sistem</h2>
-                        <div id="log-content" class="p-6 glass-card" style="max-height: 80vh; overflow-y: auto;"></div>
-                    `;
-                    pages.appendChild(wrapper);
-                }
-            }
-        }
-        function removeLogUIIfExists() {
-            const navLog = document.getElementById('nav-log');
-            if (navLog) navLog.remove();
-            const logPage = document.getElementById('log-page');
-            if (logPage) logPage.remove();
-        }
-
         function updateUIVisibility() {
             const isAdmin = currentUser && [0, 1].includes(parseInt(currentUser.level));
-            // Toggle other admin features
-            const btnTambah = document.getElementById('btn-tambah-surat');
-            if (btnTambah) btnTambah.style.display = isAdmin ? 'flex' : 'none';
-            const navMasuk = document.getElementById('nav-surat-masuk');
-            if (navMasuk) navMasuk.style.display = isAdmin ? 'flex' : 'none';
-            const navUsers = document.getElementById('nav-users');
-            if (navUsers) navUsers.style.display = isAdmin ? 'flex' : 'none';
-            const navKeluar = document.getElementById('nav-surat-keluar');
-            if (navKeluar) navKeluar.style.display = 'none';
-
-            // Admin-only: create Log UI on demand; Non-admin: ensure it's not in DOM
-            if (isAdmin) {
-                ensureAdminLogUIExists();
-            } else {
-                removeLogUIIfExists();
-            }
+            document.getElementById('btn-tambah-surat').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('nav-surat-masuk').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('nav-users').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('nav-log').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('nav-surat-keluar').style.display = 'none';
         }
         function checkLoginStatus() {
             const userData = localStorage.getItem('currentUser');
@@ -605,12 +562,6 @@
             lucide.createIcons(); 
         }
         function showPage(pageId) {
-            // Guard: prevent non-admin access to #log via URL hash
-            if (pageId === 'log' && (!currentUser || ![0,1].includes(parseInt(currentUser.level)))) {
-                showCustomAlert('Anda tidak memiliki akses ke halaman Log Aktivitas.', 'Akses Ditolak');
-                // Fallback to dashboard if logged in, otherwise login
-                if (currentUser) pageId = 'dashboard'; else pageId = 'login';
-            }
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
             document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
             const targetPage = document.getElementById(pageId + '-page');
