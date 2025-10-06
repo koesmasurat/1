@@ -55,6 +55,18 @@
 
         .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); z-index: 9999; justify-content: center; align-items: center; }
         .modal { display: none; }
+        
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.2); }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-btn.active { background-color: var(--main-color); font-weight: bold; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -188,7 +200,12 @@
 
                 <!-- Dashboard Page -->
                 <div id="dashboard-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-2">Dashboard</h2>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold">Dashboard</h2>
+                        <button onclick="loadDashboardData()" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                            Refresh Data
+                        </button>
+                    </div>
                     <p class="text-md text-gray-200 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
                     <div id="dashboard-content">
                         <!-- Stats Cards -->
@@ -219,16 +236,27 @@
 
                 <!-- Surat Masuk Page -->
                 <div id="surat-masuk-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Daftar Surat Masuk</h2>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold">Daftar Surat Masuk</h2>
+                        <button onclick="loadSuratData('Masuk', 1)" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> Refresh Data
+                        </button>
+                    </div>
                      <button id="btn-tambah-surat" onclick="openTambahSuratModal()" class="mb-6 bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
                         <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Surat Masuk
                     </button>
                     <div class="p-6 glass-card">
-                        <div class="mb-4">
-                            <input type="text" id="search-surat" onkeyup="filterSurat('surat-masuk-list', this.value)" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 form-input rounded-md">
+                        <div class="mb-4 flex gap-2">
+                            <input type="text" id="search-surat-masuk" placeholder="Cari: Nomor/Perihal/Pengirim" class="w-full px-3 py-2 form-input rounded-md">
+                             <button onclick="handleSearch('surat-masuk')" class="bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                                <i data-lucide="search" class="w-5 h-5 mr-2"></i> Cari
+                            </button>
                         </div>
                         <div id="surat-masuk-list" class="overflow-x-auto">
-                            <p class="text-gray-200">Data surat masuk akan dimuat di sini...</p>
+                            <!-- Table rendered here -->
+                        </div>
+                        <div id="pagination-surat-masuk" class="mt-4 flex justify-between items-center text-sm">
+                           <!-- Pagination controls rendered here -->
                         </div>
                     </div>
                 </div>
@@ -240,10 +268,24 @@
 
                 <!-- Disposisi Saya Page -->
                 <div id="disposisi-page" class="page hidden text-white">
-                    <h2 class="text-3xl font-bold mb-6">Inbox Disposisi</h2>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold">Inbox Disposisi</h2>
+                        <button onclick="loadMyDisposisi(1)" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> Refresh Data
+                        </button>
+                    </div>
                     <div class="p-6 glass-card">
+                        <div class="mb-4 flex gap-2">
+                            <input type="text" id="search-disposisi" placeholder="Cari: No Surat/Perihal/Pengirim/Catatan" class="w-full px-3 py-2 form-input rounded-md">
+                             <button onclick="handleSearch('disposisi')" class="bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                                <i data-lucide="search" class="w-5 h-5 mr-2"></i> Cari
+                            </button>
+                        </div>
                         <div id="my-disposisi-list" class="overflow-x-auto">
-                            <p class="text-gray-200">Daftar disposisi untuk Anda akan dimuat di sini...</p>
+                           <!-- Disposisi list rendered here -->
+                        </div>
+                         <div id="pagination-disposisi" class="mt-4 flex justify-between items-center text-sm">
+                           <!-- Pagination controls rendered here -->
                         </div>
                     </div>
                 </div>
@@ -373,6 +415,7 @@
         let currentUser = null;
         let allUsers = [];
         let confirmCallback = null;
+        const ITEMS_PER_PAGE = 10;
 
         // --- UTILITY FUNCTIONS ---
         
@@ -385,6 +428,39 @@
             }
         }
         
+        function formatTanggalWaktu(isoString) {
+            if (!isoString) return 'N/A';
+            try {
+                const date = new Date(isoString);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            } catch (e) {
+                return isoString; // Fallback to original string if parsing fails
+            }
+        }
+
+        function formatTanggal(isoString) {
+            if (!isoString) return 'N/A';
+            try {
+                const date = new Date(isoString);
+                // Adjust for potential timezone offset issues when only date is needed
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+
+                const year = adjustedDate.getFullYear();
+                const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(adjustedDate.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (e) {
+                return isoString.split('T')[0]; // Fallback
+            }
+        }
+
         function showCustomAlert(message, title = 'Notifikasi') {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = title;
@@ -487,8 +563,8 @@
                     window.location.hash = pageId;
                     switch (pageId) {
                         case 'dashboard': loadDashboardData(); break;
-                        case 'surat-masuk': loadSuratData('Masuk'); break;
-                        case 'disposisi': loadMyDisposisi(); break;
+                        case 'surat-masuk': loadSuratData('Masuk', 1); break;
+                        case 'disposisi': loadMyDisposisi(1); break;
                         case 'users': loadUserManagement(); break;
                         case 'log': loadLogData(); break;
                         case 'arsip': loadArsipData(); break;
@@ -515,6 +591,8 @@
             document.getElementById('register-form').addEventListener('submit', handleRegister);
             document.getElementById('form-surat').addEventListener('submit', handleSuratSubmit);
             document.getElementById('form-disposisi').addEventListener('submit', handleDisposisiSubmit);
+            document.getElementById('search-surat-masuk').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('surat-masuk'); });
+            document.getElementById('search-disposisi').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('disposisi'); });
         });
 
         // --- API & DATA HANDLING FUNCTIONS ---
@@ -625,7 +703,7 @@
                         showCustomAlert('Surat berhasil dikirim ke Direktur!', 'Berhasil');
                         document.getElementById('form-surat').reset();
                         document.getElementById('modal-tambah-surat').style.display='none';
-                        loadSuratData('Masuk');
+                        loadSuratData('Masuk', 1);
                     } else {
                         showMessage('surat-form-message', result.message || 'Gagal menyimpan surat.', true);
                     }
@@ -639,14 +717,23 @@
             reader.readAsDataURL(file);
         }
 
-        async function loadSuratData(jenis) {
+        async function loadSuratData(jenis, page = 1) {
             const listContainer = document.getElementById('surat-masuk-list');
+            const paginationContainer = document.getElementById('pagination-surat-masuk');
+            const refreshButtonIcon = document.querySelector('#surat-masuk-page button[onclick*="loadSuratData"] i');
+            const searchTerm = document.getElementById('search-surat-masuk').value.trim();
+
+            if(refreshButtonIcon) refreshButtonIcon.classList.add('animate-spin');
             listContainer.innerHTML = '<p class="text-gray-200">Memuat data surat...</p>';
+            paginationContainer.innerHTML = '';
             showLoading(true);
+
             try {
-                const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}`);
+                const url = `${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}&page=${page}&limit=${ITEMS_PER_PAGE}&searchTerm=${encodeURIComponent(searchTerm)}`;
+                const data = await fetchWithRetry(url);
                 if (data.status === 'success') {
                     renderSuratMasukList(listContainer, data.surat);
+                    renderPagination('surat-masuk', paginationContainer, data.pagination, (p) => loadSuratData('Masuk', p));
                 } else {
                     listContainer.innerHTML = `<p class="text-red-400">${data.message || 'Gagal memuat data.'}</p>`;
                 }
@@ -655,12 +742,13 @@
                 listContainer.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
+                if(refreshButtonIcon) refreshButtonIcon.classList.remove('animate-spin');
             }
         }
         
         function renderSuratMasukList(container, suratList) {
              if (!suratList || suratList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200">Belum ada data surat masuk yang diupload.</p>';
+                container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada data surat yang ditemukan.</p>';
                 return;
             }
 
@@ -680,11 +768,11 @@
             
             suratList.forEach(surat => {
                 html += `
-                    <tr data-search="${surat.nomor_surat} ${surat.perihal} ${surat.pengirim_penerima}" class="hover:bg-black/10">
+                    <tr class="hover:bg-black/10">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${surat.nomor_surat}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.perihal}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.pengirim_penerima}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${surat.tanggal}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${formatTanggal(surat.tanggal)}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <a href="${surat.file_url}" target="_blank" class="text-amber-400 hover:text-amber-300 font-medium">Lihat File</a>
                             <button onclick="openRiwayatModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-cyan-400 hover:text-cyan-300 font-medium ml-3">Riwayat</button>
@@ -759,7 +847,7 @@
                     showCustomAlert(result.message, 'Berhasil');
                     document.getElementById('form-disposisi').reset();
                     document.getElementById('modal-disposisi').style.display='none';
-                    loadMyDisposisi();
+                    loadMyDisposisi(1);
                 } else {
                     showMessage('dispo-form-message', result.message || 'Gagal mengirim disposisi.', true);
                 }
@@ -771,21 +859,29 @@
             }
         }
         
-        async function loadMyDisposisi() {
+        async function loadMyDisposisi(page = 1) {
             const container = document.getElementById('my-disposisi-list');
+            const paginationContainer = document.getElementById('pagination-disposisi');
+            const refreshButtonIcon = document.querySelector('#disposisi-page button i');
+            const searchTerm = document.getElementById('search-disposisi').value.trim();
+
+            if(refreshButtonIcon) refreshButtonIcon.classList.add('animate-spin');
             container.innerHTML = '<p class="text-gray-200">Memuat disposisi...</p>';
+            paginationContainer.innerHTML = '';
             
             showLoading(true);
             try {
-                const [dispoData, userData] = await Promise.all([
-                    fetchWithRetry(`${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}`),
+                const [userData] = await Promise.all([
                     fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`)
                 ]);
-                
                 if (userData.status === 'success') allUsers = userData.users;
+
+                const url = `${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}&page=${page}&limit=${ITEMS_PER_PAGE}&searchTerm=${encodeURIComponent(searchTerm)}`;
+                const dispoData = await fetchWithRetry(url);
 
                 if (dispoData.status === 'success') {
                     renderMyDisposisiList(container, dispoData.disposisi);
+                    renderPagination('disposisi', paginationContainer, dispoData.pagination, loadMyDisposisi);
                 } else {
                     container.innerHTML = `<p class="text-red-400">${dispoData.message || 'Gagal memuat data.'}</p>`;
                 }
@@ -794,12 +890,13 @@
                 container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             } finally {
                 showLoading(false);
+                if(refreshButtonIcon) refreshButtonIcon.classList.remove('animate-spin');
             }
         }
 
         function renderMyDisposisiList(container, disposisiList) {
              if (!disposisiList || disposisiList.length === 0) {
-                container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi baru untuk Anda.</p>';
+                container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada disposisi yang ditemukan.</p>';
                 return;
             }
 
@@ -828,7 +925,7 @@
                              <div>
                                 <p class="font-bold text-white">${d.nomor_surat}</p>
                                 <p class="text-sm text-gray-200">${d.perihal}</p>
-                                <p class="text-xs text-gray-300 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${new Date(d.tanggal_disposisi).toLocaleString('id-ID')}</p>
+                                <p class="text-xs text-gray-300 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${formatTanggalWaktu(d.tanggal_disposisi)}</p>
                             </div>
                             <div class="flex items-center space-x-2">
                                 ${statusUpdateOptions}
@@ -858,7 +955,7 @@
                 const payload = { action: 'update_disposisi_status', id: disposisiId, statusType, value, userId: currentUser.id };
                 const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 if (result.status === 'success') {
-                    loadMyDisposisi(); 
+                    loadMyDisposisi(1); 
                     loadDashboardData(); 
                 } else {
                     showCustomAlert('Gagal update status: ' + (result.message || 'Terjadi kesalahan.'), 'Kesalahan Update');
@@ -870,8 +967,43 @@
                 showLoading(false);
             }
         }
+        
+        // --- SEARCH & PAGINATION ---
+        function handleSearch(pageType) {
+            if (pageType === 'surat-masuk') {
+                loadSuratData('Masuk', 1);
+            } else if (pageType === 'disposisi') {
+                loadMyDisposisi(1);
+            }
+        }
 
-        // --- NEW HISTORY FUNCTIONS ---
+        function renderPagination(pageType, container, pagination, callback) {
+            const { totalItems, totalPages, currentPage } = pagination;
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+            const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, totalItems);
+
+            let pageButtons = '';
+            for(let i = 1; i <= totalPages; i++) {
+                pageButtons += `<button onclick="${callback.name}(${i})" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+
+            container.innerHTML = `
+                <span class="text-gray-300">Menampilkan ${startItem}-${endItem} dari ${totalItems}</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="${callback.name}(${currentPage - 1})" class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>Sebelumnya</button>
+                    ${pageButtons}
+                    <button onclick="${callback.name}(${currentPage + 1})" class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya</button>
+                </div>
+            `;
+        }
+
+
+        // --- HISTORY FUNCTIONS ---
 
         async function openRiwayatModal(suratId, suratNomor) {
             const modal = document.getElementById('modal-riwayat');
@@ -909,7 +1041,7 @@
                             <i data-lucide="check" class="w-4 h-4 text-white"></i>
                         </span>
                         <h3 class="flex items-center mb-1 text-lg font-semibold text-white">${item.actor}</h3>
-                        <time class="block mb-2 text-sm font-normal leading-none text-gray-400">${new Date(item.timestamp).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}</time>
+                        <time class="block mb-2 text-sm font-normal leading-none text-gray-400">${formatTanggalWaktu(item.timestamp)}</time>
                         <p class="mb-2 text-base font-normal text-gray-200">${item.action}</p>
                         <p class="text-sm font-italic text-gray-300 bg-black/20 p-2 rounded-md">Catatan: ${item.detail}</p>
                     </div>
@@ -921,7 +1053,7 @@
             lucide.createIcons();
         }
         
-        // --- OTHER FUNCTIONS (UNCHANGED) ---
+        // --- OTHER FUNCTIONS ---
         async function loadDashboardData() { 
             showLoading(true);
             try {
@@ -962,3 +1094,4 @@
     </script>
 </body>
 </html>
+
