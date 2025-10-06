@@ -5,23 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Manajemen Surat RSUD dr. R. Koesma</title>
     <link rel="icon" type="image/png" href="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { 
-            --main-color: #f59e0b; /* Amber 500 */ 
-            --main-color-light: #fcd34d; /* Amber 300 */
+            --main-color: #f59e0b;
+            --main-color-light: #fcd34d;
         }
-        
-        /* Custom scrollbar for a more modern look */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
-
         body { 
             font-family: 'Inter', sans-serif; 
             background-image: url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2670&auto=format&fit=crop');
@@ -35,16 +30,14 @@
             font-weight: 600; 
             color: white;
         }
-        
         .glass-card {
-            background: rgba(20, 10, 0, 0.6); /* Darker glass for better contrast */
+            background: rgba(20, 10, 0, 0.6);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 1rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         }
-
         .form-input {
             background: rgba(0,0,0,0.2) !important;
             border: 1px solid rgba(255,255,255,0.3) !important;
@@ -52,17 +45,12 @@
         }
         .form-input::placeholder { color: rgba(255,255,255,0.5) !important; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-
         .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); z-index: 9999; justify-content: center; align-items: center; }
         .modal { display: none; }
-        
         .pagination-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: background-color 0.2s;
+            padding: 0.5rem 1rem; border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1); color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2); transition: background-color 0.2s;
         }
         .pagination-btn:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.2); }
         .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -71,7 +59,6 @@
 </head>
 <body class="min-h-screen">
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -79,76 +66,49 @@
         </svg>
     </div>
 
-    <!-- Main App Container -->
     <div id="app" class="flex">
-        <!-- Sidebar -->
         <div id="sidebar" class="hidden fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-64 glass-card z-40 m-2 rounded-2xl flex-shrink-0 flex flex-col h-[calc(100vh-1rem)]">
-            <div class="p-6 border-b border-white/20 text-center flex-shrink-0">
-                <img src="https://github.com/koesmasurat/1/blob/main/new%20logo%20rsud%202025%20kecil.png?raw=true" alt="Logo RSUD" class="w-16 h-16 mx-auto mb-2">
-                <h1 class="text-xl font-bold text-white">SIMAS RSUD</h1>
-                <p class="text-sm text-gray-200">dr. R. Koesma</p>
+            <div class="p-4 border-b border-white/20 text-center flex-shrink-0">
+                <img id="sidebar-profile-pic" src="https://ui-avatars.com/api/?name=User&background=f59e0b&color=fff" alt="Foto Profil" class="w-20 h-20 mx-auto mb-2 rounded-full border-2 border-amber-400 object-cover">
+                <h2 id="sidebar-user-name" class="text-lg font-bold text-white">Nama User</h2>
+                <p class="text-xs text-gray-300">SIMAS RSUD dr. R. Koesma</p>
             </div>
-            <nav class="mt-6 flex-grow overflow-y-auto">
-                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
-                </a>
-                <a href="#surat-masuk" id="nav-surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="mail-check" class="w-5 h-5"></i><span>Surat Masuk</span>
-                </a>
-                <a href="#surat-keluar" id="nav-surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="send" class="w-5 h-5"></i><span>Surat Keluar</span>
-                </a>
-                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="layers-3" class="w-5 h-5"></i><span>Inbox Disposisi</span>
-                </a>
-                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span>
-                </a>
-                <a href="#users" id="nav-users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
-                </a>
-                <a href="#log" id="nav-log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3">
-                    <i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span>
-                </a>
+            <nav class="mt-4 flex-grow overflow-y-auto">
+                <a href="#dashboard" onclick="showPage('dashboard')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span></a>
+                <a href="#surat-masuk" id="nav-surat-masuk" onclick="showPage('surat-masuk')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="mail-check" class="w-5 h-5"></i><span>Surat Masuk</span></a>
+                <a href="#surat-keluar" id="nav-surat-keluar" onclick="showPage('surat-keluar')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="send" class="w-5 h-5"></i><span>Surat Keluar</span></a>
+                <a href="#disposisi" onclick="showPage('disposisi')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="layers-3" class="w-5 h-5"></i><span>Inbox Disposisi</span></a>
+                <a href="#arsip" onclick="showPage('arsip')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="archive" class="w-5 h-5"></i><span>Arsip Dokumen</span></a>
+                <a href="#profil" onclick="showPage('profil')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="user-circle" class="w-5 h-5"></i><span>Profil Saya</span></a>
+                <a href="#users" id="nav-users" onclick="showPage('users')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span></a>
+                <a href="#log" id="nav-log" onclick="showPage('log')" class="nav-link block px-6 py-3 text-gray-100 hover:bg-white/10 rounded-r-full flex items-center space-x-3"><i data-lucide="file-text" class="w-5 h-5"></i><span>Log Aktivitas</span></a>
             </nav>
             <div class="p-6 w-full border-t border-white/20 flex-shrink-0">
-                <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-400 hover:text-red-300 transition duration-150">
-                    <i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span>
-                </button>
+                <button onclick="logout()" class="w-full text-left flex items-center space-x-3 text-red-400 hover:text-red-300 transition duration-150"><i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span></button>
             </div>
         </div>
         
-        <!-- Content Area -->
         <div id="content-area" class="flex-1 transition-all duration-300 p-2 md:p-4 min-w-0">
-            <button id="menu-toggle" class="md:hidden p-2 rounded-full glass-card mb-4 fixed top-4 right-4 z-50">
-                <i data-lucide="menu" class="w-6 h-6 text-white"></i>
-            </button>
+            <button id="menu-toggle" class="md:hidden p-2 rounded-full glass-card mb-4 fixed top-4 right-4 z-50"><i data-lucide="menu" class="w-6 h-6 text-white"></i></button>
 
-            <!-- Pages Container -->
             <div id="pages-container">
-                <!-- Login Page -->
                 <div id="login-page" class="page max-w-md mx-auto mt-20 p-8 glass-card">
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Login SIMAS RSUD</h2>
                     <p class="text-sm text-center text-red-400 mb-4" id="login-error-message"></p>
                     <form id="login-form">
                         <div class="mb-4">
                             <label for="login-userid" class="block text-sm font-medium text-gray-200">User ID</label>
-                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input" placeholder="Masukkan User ID Anda">
+                            <input type="text" id="login-userid" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm form-input" placeholder="Masukkan User ID Anda">
                         </div>
                         <div class="mb-6">
                             <label for="login-password" class="block text-sm font-medium text-gray-200">Password</label>
-                            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 sm:text-sm form-input">
+                            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 rounded-md shadow-sm form-input">
                         </div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition duration-150">
-                            Masuk
-                        </button>
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700">Masuk</button>
                     </form>
-                    <p class="mt-4 text-center text-sm text-gray-300">
-                        Belum punya akun? <a href="#" onclick="showPage('register')" class="font-medium text-amber-400 hover:text-amber-300">Daftar Sekarang</a>
-                    </p>
+                    <p class="mt-4 text-center text-sm text-gray-300">Belum punya akun? <a href="#" onclick="showPage('register')" class="font-medium text-amber-400 hover:text-amber-300">Daftar Sekarang</a></p>
                 </div>
                 
-                <!-- Register Page -->
                 <div id="register-page" class="page max-w-lg mx-auto mt-10 p-8 glass-card hidden">
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Pendaftaran Akun Baru</h2>
                     <p class="text-sm text-center text-red-400 mb-4" id="register-error-message"></p>
@@ -193,22 +153,16 @@
                             Daftar
                         </button>
                     </form>
-                    <p class="mt-4 text-center text-sm text-gray-300">
-                        Sudah punya akun? <a href="#" onclick="showPage('login')" class="font-medium text-amber-400 hover:text-amber-300">Login</a>
-                    </p>
+                    <p class="mt-4 text-center text-sm text-gray-300">Sudah punya akun? <a href="#" onclick="showPage('login')" class="font-medium text-amber-400 hover:text-amber-300">Login</a></p>
                 </div>
 
-                <!-- Dashboard Page -->
                 <div id="dashboard-page" class="page hidden text-white">
                     <div class="flex justify-between items-center mb-2">
                         <h2 class="text-3xl font-bold">Dashboard</h2>
-                        <button onclick="loadDashboardData()" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
-                            Refresh Data
-                        </button>
+                        <button onclick="loadDashboardData()" class="bg-amber-600/80 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700">Refresh Data</button>
                     </div>
                     <p class="text-md text-gray-200 mb-6">Selamat datang, <span id="user-display-name" class="font-semibold"></span>! Jabatan: <span id="user-display-jabatan" class="font-semibold"></span></p>
                     <div id="dashboard-content">
-                        <!-- Stats Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div class="p-6 glass-card border-t-4 border-sky-400">
                                 <p class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
@@ -223,18 +177,81 @@
                                 <p class="text-3xl font-bold mt-1" id="stat-unfinished">0</p>
                             </div>
                         </div>
-
-                        <!-- Disposisi List -->
                         <div class="p-6 glass-card">
                             <h3 class="text-xl font-semibold mb-4">Disposisi Terbaru untuk Anda</h3>
-                            <div id="disposisi-list-dashboard">
-                                <p class="text-gray-200">Memuat data...</p>
+                            <div id="disposisi-list-dashboard"><p class="text-gray-200">Memuat data...</p></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="profil-page" class="page hidden text-white">
+                    <h2 class="text-3xl font-bold mb-6">Profil Saya</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 flex flex-col items-center p-6 glass-card">
+                             <img id="profile-pic-display" src="https://ui-avatars.com/api/?name=User&background=f59e0b&color=fff&size=128" alt="Foto Profil" class="w-32 h-32 mb-4 rounded-full border-4 border-amber-400 object-cover">
+                             <input type="file" id="profile-pic-input" class="hidden" accept="image/png, image/jpeg">
+                             <div class="flex space-x-2">
+                                <button onclick="document.getElementById('profile-pic-input').click()" class="bg-amber-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-amber-700 transition duration-150 flex items-center">
+                                    <i data-lucide="camera" class="w-5 h-5 mr-2"></i> Ubah Foto
+                                </button>
+                                <button id="remove-pic-btn" onclick="handleRemoveProfilePic()" class="bg-red-600 text-white px-3 py-2 rounded-lg shadow-md hover:bg-red-700 transition duration-150 flex items-center">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                             </div>
+                            <p class="text-xs text-gray-400 mt-2">Max. 1MB (JPG/PNG)</p>
+                        </div>
+                        
+                        <div class="md:col-span-2 space-y-6">
+                            <div class="p-6 glass-card">
+                                <h3 class="text-xl font-semibold mb-4 border-b border-white/20 pb-2">Informasi Pribadi</h3>
+                                <form id="profile-info-form">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-200">Nama Lengkap</label>
+                                            <input type="text" id="profile-nama" required class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                         <div>
+                                            <label class="block text-sm font-medium text-gray-200">Nomor WA</label>
+                                            <input type="text" id="profile-wa" required class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                         <div>
+                                            <label class="block text-sm font-medium text-gray-200">Email</label>
+                                            <input type="email" id="profile-email" class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                    </div>
+                                    <div class="text-right mt-4">
+                                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Simpan Info</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="p-6 glass-card">
+                                 <h3 class="text-xl font-semibold mb-4 border-b border-white/20 pb-2">Ubah Password</h3>
+                                 <form id="change-password-form">
+                                     <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-200">Password Lama</label>
+                                            <input type="password" id="old-password" required class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-200">Password Baru</label>
+                                            <input type="password" id="new-password" required class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-200">Konfirmasi Password Baru</label>
+                                            <input type="password" id="confirm-new-password" required class="mt-1 block w-full px-3 py-2 form-input rounded-md">
+                                        </div>
+                                     </div>
+                                     <p id="password-form-message" class="text-sm my-4 hidden"></p>
+                                     <div class="text-right mt-4">
+                                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700">Ubah Password</button>
+                                    </div>
+                                 </form>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Surat Masuk Page -->
                 <div id="surat-masuk-page" class="page hidden text-white">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold">Daftar Surat Masuk</h2>
@@ -252,21 +269,13 @@
                                 <i data-lucide="search" class="w-5 h-5 mr-2"></i> Cari
                             </button>
                         </div>
-                        <div id="surat-masuk-list" class="overflow-x-auto">
-                            <!-- Table rendered here -->
-                        </div>
-                        <div id="pagination-surat-masuk" class="mt-4 flex justify-between items-center text-sm">
-                           <!-- Pagination controls rendered here -->
-                        </div>
+                        <div id="surat-masuk-list" class="overflow-x-auto"></div>
+                        <div id="pagination-surat-masuk" class="mt-4 flex justify-between items-center text-sm"></div>
                     </div>
                 </div>
-
-                <!-- Surat Keluar Page -->
-                <div id="surat-keluar-page" class="page hidden text-white">
-                     <h2 class="text-3xl font-bold mb-6">Daftar Surat Keluar</h2>
-                </div>
-
-                <!-- Disposisi Saya Page -->
+                
+                <div id="surat-keluar-page" class="page hidden text-white"><h2 class="text-3xl font-bold mb-6">Daftar Surat Keluar</h2></div>
+                
                 <div id="disposisi-page" class="page hidden text-white">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold">Inbox Disposisi</h2>
@@ -281,27 +290,19 @@
                                 <i data-lucide="search" class="w-5 h-5 mr-2"></i> Cari
                             </button>
                         </div>
-                        <div id="my-disposisi-list" class="overflow-x-auto">
-                           <!-- Disposisi list rendered here -->
-                        </div>
-                         <div id="pagination-disposisi" class="mt-4 flex justify-between items-center text-sm">
-                           <!-- Pagination controls rendered here -->
-                        </div>
+                        <div id="my-disposisi-list" class="overflow-x-auto"></div>
+                         <div id="pagination-disposisi" class="mt-4 flex justify-between items-center text-sm"></div>
                     </div>
                 </div>
-
-                <!-- Arsip Page -->
+                
                 <div id="arsip-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Arsip Dokumen</h2>
                     <p class="text-gray-200 mb-6">Lihat semua arsip surat yang tersimpan di Google Drive.</p>
                     <div class="p-6 glass-card">
-                        <div id="arsip-list">
-                            <p class="text-gray-200">Data arsip akan dimuat di sini...</p>
-                        </div>
+                        <div id="arsip-list"><p class="text-gray-200">Data arsip akan dimuat di sini...</p></div>
                     </div>
                 </div>
                 
-                <!-- User Management Page -->
                 <div id="users-page" class="page hidden text-white">
                      <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold">Manajemen User</h2>
@@ -309,23 +310,18 @@
                             <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Tambah User Baru
                         </button>
                     </div>
-                    <div id="user-management-content" class="p-6 glass-card overflow-x-auto">
-                        <!-- User list rendered here by JS -->
-                    </div>
+                    <div id="user-management-content" class="p-6 glass-card overflow-x-auto"></div>
                 </div>
-
-                <!-- Log Page -->
+                
                 <div id="log-page" class="page hidden text-white">
                     <h2 class="text-3xl font-bold mb-6">Log Aktivitas</h2>
-                    <div id="log-content" class="p-6 glass-card">
-                        <p class="text-gray-200">Log sistem akan dimuat di sini...</p>
-                    </div>
+                    <div id="log-content" class="p-6 glass-card"><p class="text-gray-200">Log sistem akan dimuat di sini...</p></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: Tambah Surat -->
+    <!-- MODALS -->
     <div id="modal-tambah-surat" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
         <div class="relative p-5 w-full max-w-2xl glass-card">
             <h3 class="text-xl font-bold mb-4 text-white">Input Surat Masuk</h3>
@@ -358,20 +354,15 @@
             </form>
         </div>
     </div>
-
-    <!-- MODAL: Disposisi -->
     <div id="modal-disposisi" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
         <div class="relative p-5 w-full max-w-xl glass-card">
             <h3 class="text-xl font-bold mb-4 text-white">Disposisi Lanjut Surat</h3>
             <p class="text-sm text-amber-300 mb-4" id="dispo-surat-nomor"></p>
             <form id="form-disposisi">
-                <input type="hidden" id="dispo-surat-id">
-                <input type="hidden" id="dispo-parent-id">
+                <input type="hidden" id="dispo-surat-id"><input type="hidden" id="dispo-parent-id">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-200">Pilih Penerima Disposisi</label>
-                    <div id="dispo-penerima-list" class="mt-2 max-h-48 overflow-y-auto space-y-2 p-3 bg-black/20 rounded-md">
-                        <!-- Checkboxes filled by JS -->
-                    </div>
+                    <div id="dispo-penerima-list" class="mt-2 max-h-48 overflow-y-auto space-y-2 p-3 bg-black/20 rounded-md"></div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-200">Instruksi/Catatan</label>
@@ -385,8 +376,6 @@
             </form>
         </div>
     </div>
-    
-    <!-- MODAL: Add/Edit User -->
     <div id="modal-user-form" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
         <div class="relative p-6 w-full max-w-lg glass-card">
             <h3 id="user-form-title" class="text-xl font-bold mb-4 text-white">Form User</h3>
@@ -398,7 +387,7 @@
                         <input type="text" id="user-form-nama" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                     </div>
                     <div>
-                        <label for="user-form-userid" class="block text-sm font-medium text-gray-200">User ID (untuk login)</label>
+                        <label for="user-form-userid" class="block text-sm font-medium text-gray-200">User ID (login)</label>
                         <input type="text" id="user-form-userid" required class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                     </div>
                     <div>
@@ -424,7 +413,7 @@
                         <input type="email" id="user-form-email" class="mt-1 block w-full px-3 py-2 form-input rounded-md shadow-sm">
                     </div>
                 </div>
-                <p id="user-form-notice" class="text-xs text-amber-300 mt-4 hidden">Password akan diatur default menjadi 'password123'. User dapat meresetnya nanti.</p>
+                <p id="user-form-notice" class="text-xs text-amber-300 mt-4 hidden">Password akan diatur default 'password123'.</p>
                 <div id="user-form-message" class="text-sm text-red-400 my-4"></div>
                 <div class="flex justify-end space-x-2 mt-6">
                     <button type="button" onclick="document.getElementById('modal-user-form').style.display='none';" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Batal</button>
@@ -433,29 +422,18 @@
             </form>
         </div>
     </div>
-
-
-    <!-- MODAL: Custom Alert/Confirm -->
     <div id="modal-custom" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
         <div class="relative p-6 w-full max-w-sm glass-card">
             <h3 id="custom-modal-title" class="text-lg font-bold mb-3 text-white">Notifikasi</h3>
             <p id="custom-modal-message" class="text-sm text-gray-200 mb-6"></p>
-            <div id="custom-modal-actions" class="flex justify-end space-x-2">
-                <!-- Action buttons inserted by JS -->
-            </div>
+            <div id="custom-modal-actions" class="flex justify-end space-x-2"></div>
         </div>
     </div>
-
-    <!-- MODAL: Riwayat Surat -->
     <div id="modal-riwayat" class="modal fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-center z-50">
         <div class="relative p-6 w-full max-w-2xl glass-card">
             <h3 class="text-xl font-bold text-white">Riwayat Surat</h3>
             <p id="riwayat-surat-nomor" class="text-sm text-amber-300 mb-6"></p>
-            
-            <div id="riwayat-timeline-container" class="mt-4 max-h-[60vh] overflow-y-auto pr-4">
-                <!-- Timeline will be rendered here by JS -->
-            </div>
-
+            <div id="riwayat-timeline-container" class="mt-4 max-h-[60vh] overflow-y-auto pr-4"></div>
             <div class="flex justify-end mt-6">
                 <button onclick="document.getElementById('modal-riwayat').style.display='none'" class="px-4 py-2 bg-gray-500/50 text-white rounded-md hover:bg-gray-500/70">Tutup</button>
             </div>
@@ -463,16 +441,14 @@
     </div>
 
     <script>
-        // *** PENTING: GANTI URL INI dengan URL Web App Google Apps Script Anda yang sudah di-deploy. ***
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwQvV3PoztdzPD4-eYznz_WKtUlNDRfLeyKPXKfxzqeLWhhdpyIa6QSFlXhMfpCuoU/exec'; 
-        
         let currentUser = null;
         let allUsers = [];
         let confirmCallback = null;
         const ITEMS_PER_PAGE = 10;
+        const DEFAULT_PIC = 'https://ui-avatars.com/api/?background=f59e0b&color=fff&size=128';
 
         // --- UTILITY FUNCTIONS ---
-        
         function showMessage(elementId, message, isError = true) {
             const el = document.getElementById(elementId);
             if(el) {
@@ -481,7 +457,6 @@
                 el.classList.toggle('hidden', !message);
             }
         }
-        
         function formatTanggalWaktu(isoString) {
             if (!isoString) return 'N/A';
             try {
@@ -493,50 +468,38 @@
                 const minutes = String(date.getMinutes()).padStart(2, '0');
                 const seconds = String(date.getSeconds()).padStart(2, '0');
                 return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-            } catch (e) {
-                return isoString; // Fallback to original string if parsing fails
-            }
+            } catch (e) { return isoString; }
         }
-
         function formatTanggal(isoString) {
             if (!isoString) return 'N/A';
             try {
                 const date = new Date(isoString);
-                // Adjust for potential timezone offset issues when only date is needed
                 const userTimezoneOffset = date.getTimezoneOffset() * 60000;
                 const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
-
                 const year = adjustedDate.getFullYear();
                 const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
                 const day = String(adjustedDate.getDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
-            } catch (e) {
-                return isoString.split('T')[0]; // Fallback
-            }
+            } catch (e) { return isoString.split('T')[0]; }
         }
-
         function showCustomAlert(message, title = 'Notifikasi') {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = title;
             document.getElementById('custom-modal-message').textContent = message;
-            
             const actions = document.getElementById('custom-modal-actions');
             actions.innerHTML = `<button onclick="document.getElementById('modal-custom').style.display='none';" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">OK</button>`;
             modal.style.display = 'flex';
         }
-        
         function showCustomConfirm(message, callback) {
             const modal = document.getElementById('modal-custom');
             document.getElementById('custom-modal-title').textContent = 'Konfirmasi Tindakan';
             document.getElementById('custom-modal-message').textContent = message;
             confirmCallback = callback;
-
             const actions = document.getElementById('custom-modal-actions');
             actions.innerHTML = `
                 <button id="btn-cancel" class="px-4 py-2 bg-gray-500/50 rounded-md hover:bg-gray-500/70 text-white">Batal</button>
                 <button id="btn-confirm" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ya, Lanjutkan</button>
             `;
-            
             document.getElementById('btn-cancel').onclick = () => {
                 modal.style.display = 'none';
                 if (confirmCallback) confirmCallback(false);
@@ -545,14 +508,11 @@
                 modal.style.display = 'none';
                 if (confirmCallback) confirmCallback(true);
             };
-
             modal.style.display = 'flex';
         }
-
         function showLoading(show) {
             document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
         }
-        
         async function fetchWithRetry(url, options = {}, retries = 3) {
             let attempt = 0;
             while (attempt < retries) {
@@ -571,8 +531,7 @@
             }
         }
 
-        // --- AUTHENTICATION & UI LOGIC ---
-
+        // --- AUTH & UI LOGIC ---
         function updateUIVisibility() {
             const isLevel0 = currentUser && currentUser.level == 0;
             document.getElementById('btn-tambah-surat').style.display = isLevel0 ? 'flex' : 'none';
@@ -581,16 +540,16 @@
             document.getElementById('nav-log').style.display = isLevel0 ? 'flex' : 'none';
             document.getElementById('nav-surat-keluar').style.display = 'none';
         }
-
         function checkLoginStatus() {
             const userData = localStorage.getItem('currentUser');
             const sidebarEl = document.getElementById('sidebar');
-
             if (userData) {
                 currentUser = JSON.parse(userData);
                 document.getElementById('user-display-name').textContent = currentUser.nama;
                 document.getElementById('user-display-jabatan').textContent = `${currentUser.jabatan} (Level ${currentUser.level})`;
-                
+                document.getElementById('sidebar-user-name').textContent = currentUser.nama;
+                const profilePicUrl = currentUser.profile_pic_url || `${DEFAULT_PIC}&name=${encodeURIComponent(currentUser.nama)}`;
+                document.getElementById('sidebar-profile-pic').src = profilePicUrl;
                 sidebarEl.classList.remove('hidden');
                 updateUIVisibility();
                 const initialHash = window.location.hash.substring(1) || 'dashboard';
@@ -602,19 +561,15 @@
             }
             lucide.createIcons(); 
         }
-
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
             document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
-
             const targetPage = document.getElementById(pageId + '-page');
             if (targetPage) {
                 targetPage.classList.remove('hidden');
-                
                 document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active-link'));
                 const activeLink = document.querySelector(`a[href="#${pageId}"]`);
                 if (activeLink) activeLink.classList.add('active-link');
-
                 if (currentUser) {
                     window.location.hash = pageId;
                     switch (pageId) {
@@ -622,6 +577,7 @@
                         case 'surat-masuk': loadSuratData('Masuk', 1); break;
                         case 'disposisi': loadMyDisposisi(1); break;
                         case 'users': loadUserManagement(); break;
+                        case 'profil': loadProfileData(); break;
                         case 'log': loadLogData(); break;
                         case 'arsip': loadArsipData(); break;
                     }
@@ -631,7 +587,6 @@
                 window.location.hash = '';
             }
         }
-
         function logout() {
             localStorage.removeItem('currentUser');
             currentUser = null;
@@ -639,7 +594,6 @@
         }
 
         // --- EVENT LISTENERS ---
-
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus();
             document.getElementById('menu-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
@@ -650,27 +604,26 @@
             document.getElementById('user-form').addEventListener('submit', handleUserFormSubmit);
             document.getElementById('search-surat-masuk').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('surat-masuk'); });
             document.getElementById('search-disposisi').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch('disposisi'); });
+            document.getElementById('profile-info-form').addEventListener('submit', handleProfileInfoUpdate);
+            document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+            document.getElementById('profile-pic-input').addEventListener('change', handleProfilePicChange);
         });
 
-        // --- API & DATA HANDLING FUNCTIONS ---
-
+        // --- API & DATA HANDLING ---
         async function handleLogin(e) {
             e.preventDefault();
             const userid = document.getElementById('login-userid').value.trim();
             const password = document.getElementById('login-password').value.trim();
-            
             if (!GAS_API_URL.startsWith('https://') || GAS_API_URL.includes('AKfycbw...')) {
                 showCustomAlert('ERROR: Harap ganti variabel GAS_API_URL di dalam kode HTML.', 'Kesalahan Konfigurasi');
                 return;
             }
-
             showLoading(true);
             try {
                 const result = await fetchWithRetry(GAS_API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'login', userid, password }),
                 });
-
                 if (result.status === 'success') {
                     localStorage.setItem('currentUser', JSON.stringify(result.user));
                     window.location.reload();
@@ -684,7 +637,6 @@
                 showLoading(false);
             }
         }
-
         async function handleRegister(e) {
             e.preventDefault();
             const nama = document.getElementById('reg-nama').value.trim();
@@ -692,14 +644,12 @@
             const password = document.getElementById('reg-password').value.trim();
             const wa = document.getElementById('reg-wa').value.trim();
             const email = document.getElementById('reg-email').value.trim();
-            
             const roleDataEl = document.getElementById('reg-jabatan-level');
             if (!roleDataEl.value) {
                 showMessage('register-error-message', 'Jabatan & Level harus dipilih.', true);
                 return;
             }
             const { jabatan, level } = JSON.parse(roleDataEl.value);
-
             showLoading(true);
             try {
                 const payload = { action: 'register', nama, userid, password, wa, email, jabatan, level };
@@ -707,7 +657,6 @@
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
-                
                 if (result.status === 'success') {
                     showMessage('register-error-message', 'Pendaftaran berhasil! Silakan login.', false);
                     document.getElementById('register-form').reset();
@@ -722,13 +671,11 @@
                 showLoading(false);
             }
         }
-        
         function openTambahSuratModal() {
             document.getElementById('surat-tanggal').value = new Date().toISOString().split('T')[0];
             showMessage('surat-form-message', '', false);
             document.getElementById('modal-tambah-surat').style.display = 'flex';
         }
-
         async function handleSuratSubmit(e) {
             e.preventDefault();
             const fileInput = document.getElementById('surat-file');
@@ -753,7 +700,6 @@
                     fileBase64: base64File,
                     userId: currentUser.id
                 };
-
                 try {
                     const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
                     if (result.status === 'success') {
@@ -773,18 +719,15 @@
             };
             reader.readAsDataURL(file);
         }
-
         async function loadSuratData(jenis, page = 1) {
             const listContainer = document.getElementById('surat-masuk-list');
             const paginationContainer = document.getElementById('pagination-surat-masuk');
             const refreshButtonIcon = document.querySelector('#surat-masuk-page button[onclick*="loadSuratData"] i');
             const searchTerm = document.getElementById('search-surat-masuk').value.trim();
-
             if(refreshButtonIcon) refreshButtonIcon.classList.add('animate-spin');
             listContainer.innerHTML = '<p class="text-gray-200">Memuat data surat...</p>';
             paginationContainer.innerHTML = '';
             showLoading(true);
-
             try {
                 const url = `${GAS_API_URL}?action=get_surat_list&jenis=${jenis}&userId=${currentUser.id}&page=${page}&limit=${ITEMS_PER_PAGE}&searchTerm=${encodeURIComponent(searchTerm)}`;
                 const data = await fetchWithRetry(url);
@@ -802,13 +745,11 @@
                 if(refreshButtonIcon) refreshButtonIcon.classList.remove('animate-spin');
             }
         }
-        
         function renderSuratMasukList(container, suratList) {
              if (!suratList || suratList.length === 0) {
                 container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada data surat yang ditemukan.</p>';
                 return;
             }
-
             let html = `
             <table class="min-w-full divide-y divide-white/20">
                 <thead class="bg-black/20">
@@ -820,9 +761,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/20">
-            `;
-            
+                <tbody class="divide-y divide-white/20">`;
             suratList.forEach(surat => {
                 html += `
                     <tr class="hover:bg-black/10">
@@ -834,60 +773,47 @@
                             <a href="${surat.file_url}" target="_blank" class="text-amber-400 hover:text-amber-300 font-medium">Lihat File</a>
                             <button onclick="openRiwayatModal('${surat.id}', '${surat.nomor_surat.replace(/'/g, "\\'")}')" class="text-cyan-400 hover:text-cyan-300 font-medium ml-3">Riwayat</button>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
-            
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
         
         // --- DISPOSISI LOGIC ---
-        
         function openDisposisiModal(suratId, parentDisposisiId, suratNomor) {
             document.getElementById('dispo-surat-id').value = suratId;
             document.getElementById('dispo-parent-id').value = parentDisposisiId;
             document.getElementById('dispo-surat-nomor').textContent = `No. Surat: ${suratNomor}`;
-            
             const recipientList = document.getElementById('dispo-penerima-list');
             recipientList.innerHTML = ''; 
-
             const userLevel = parseInt(currentUser.level);
             let targetLevels = [];
-            
             if (userLevel === 1) targetLevels = [2]; 
             else if (userLevel === 2) targetLevels = [3];
             else if (userLevel === 3) targetLevels = [4, 5];
-            
             const recipients = allUsers.filter(u => targetLevels.includes(parseInt(u.level)) && u.status === 'Aktif');
-
             if (recipients.length > 0) {
                 recipients.forEach(user => {
                     recipientList.innerHTML += `
                         <label class="flex items-center space-x-3 p-2 hover:bg-black/20 rounded-md cursor-pointer">
                             <input type="checkbox" name="dispo_penerima" value="${user.id}" class="w-4 h-4 rounded text-amber-500 bg-gray-700 border-gray-600 focus:ring-amber-600">
                             <span>${user.nama} <span class="text-xs text-gray-400">(${user.jabatan})</span></span>
-                        </label>
-                    `;
+                        </label>`;
                 });
             } else {
                 recipientList.innerHTML = '<p class="text-gray-400">Tidak ada pengguna di level selanjutnya untuk menerima disposisi.</p>';
             }
-
             document.getElementById('modal-disposisi').style.display='flex';
             showMessage('dispo-form-message', '', false);
         }
-
         async function handleDisposisiSubmit(e) {
             e.preventDefault();
             const checkedBoxes = document.querySelectorAll('input[name="dispo_penerima"]:checked');
             const recipientIds = Array.from(checkedBoxes).map(cb => cb.value);
-
             if (recipientIds.length === 0) {
                  showMessage('dispo-form-message', 'Penerima disposisi wajib dipilih (minimal satu).', true);
                  return;
             }
-
             showLoading(true);
             const payload = {
                 action: 'disposisi_surat',
@@ -897,7 +823,6 @@
                 ke_user_ids: recipientIds,
                 catatan: document.getElementById('dispo-catatan').value.trim()
             };
-
             try {
                 const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 if (result.status === 'success') {
@@ -915,26 +840,20 @@
                 showLoading(false);
             }
         }
-        
         async function loadMyDisposisi(page = 1) {
             const container = document.getElementById('my-disposisi-list');
             const paginationContainer = document.getElementById('pagination-disposisi');
             const refreshButtonIcon = document.querySelector('#disposisi-page button i');
             const searchTerm = document.getElementById('search-disposisi').value.trim();
-
             if(refreshButtonIcon) refreshButtonIcon.classList.add('animate-spin');
             container.innerHTML = '<p class="text-gray-200">Memuat disposisi...</p>';
             paginationContainer.innerHTML = '';
-            
             showLoading(true);
             try {
-                // We need all users for the disposisi modal, so fetch them regardless of the current user's level
                 const userData = await fetchWithRetry(`${GAS_API_URL}?action=get_users&userId=${currentUser.id}`);
                 if (userData.status === 'success') allUsers = userData.users;
-
                 const url = `${GAS_API_URL}?action=get_my_disposisi&userId=${currentUser.id}&page=${page}&limit=${ITEMS_PER_PAGE}&searchTerm=${encodeURIComponent(searchTerm)}`;
                 const dispoData = await fetchWithRetry(url);
-
                 if (dispoData.status === 'success') {
                     renderMyDisposisiList(container, dispoData.disposisi);
                     renderPagination('disposisi', paginationContainer, dispoData.pagination, loadMyDisposisi);
@@ -949,24 +868,17 @@
                 if(refreshButtonIcon) refreshButtonIcon.classList.remove('animate-spin');
             }
         }
-
         function renderMyDisposisiList(container, disposisiList) {
              if (!disposisiList || disposisiList.length === 0) {
                 container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada disposisi yang ditemukan.</p>';
                 return;
             }
-
             let html = `<div class="space-y-4">`;
-            
             disposisiList.forEach(d => {
                 const userLevel = parseInt(currentUser.level);
                 const isFinalLevel = [4, 5].includes(userLevel);
                 const canForward = !isFinalLevel && d.status_tindak_lanjut !== 'Selesai' && d.status_tindak_lanjut !== 'Diteruskan';
-                
-                const forwardButton = canForward
-                    ? `<button onclick="openDisposisiModal('${d.id_surat}', '${d.id}', '${d.nomor_surat.replace(/'/g, "\\'")}')" class="text-sm bg-amber-600/50 hover:bg-amber-600/80 text-white font-medium py-1 px-3 rounded-md flex items-center space-x-2"><i data-lucide="send" class="w-4 h-4"></i><span>Disposisi Lanjut</span></button>`
-                    : '';
-                
+                const forwardButton = canForward ? `<button onclick="openDisposisiModal('${d.id_surat}', '${d.id}', '${d.nomor_surat.replace(/'/g, "\\'")}')" class="text-sm bg-amber-600/50 hover:bg-amber-600/80 text-white font-medium py-1 px-3 rounded-md flex items-center space-x-2"><i data-lucide="send" class="w-4 h-4"></i><span>Disposisi Lanjut</span></button>` : '';
                 const statusUpdateOptions = d.status_tindak_lanjut !== 'Selesai' && d.status_tindak_lanjut !== 'Diteruskan'
                     ? `<select onchange="updateDisposisiStatus('${d.id}', 'tindak_lanjut', this.value)" class="text-sm border rounded p-1 form-input">
                         <option class="text-black" value="Belum Diproses" ${d.status_tindak_lanjut === 'Belum Diproses' ? 'selected' : ''}>Belum Diproses</option>
@@ -974,7 +886,6 @@
                         <option class="text-black" value="Selesai" ${d.status_tindak_lanjut === 'Selesai' ? 'selected' : ''}>Selesai</option>
                        </select>`
                     : `<span class="text-sm font-semibold text-gray-300">${d.status_tindak_lanjut}</span>`;
-
                 html += `
                     <div class="glass-card p-4 border-l-4 ${d.status_baca === 'Belum Dibaca' ? 'border-red-500' : 'border-gray-500'}">
                         <div class="flex flex-wrap justify-between items-start gap-2">
@@ -983,9 +894,7 @@
                                 <p class="text-sm text-gray-200">${d.perihal}</p>
                                 <p class="text-xs text-gray-300 mt-1">Dari: <strong>${d.dari_user_nama}</strong> &bull; ${formatTanggalWaktu(d.tanggal_disposisi)}</p>
                             </div>
-                            <div class="flex items-center space-x-2">
-                                ${statusUpdateOptions}
-                            </div>
+                            <div class="flex items-center space-x-2">${statusUpdateOptions}</div>
                         </div>
                         <div class="mt-3 p-3 bg-black/20 rounded-md">
                             <p class="text-sm text-gray-100"><strong>Instruksi:</strong> ${d.catatan || 'Tidak ada catatan.'}</p>
@@ -996,15 +905,12 @@
                             ${d.status_baca === 'Belum Dibaca' ? `<button onclick="updateDisposisiStatus('${d.id}', 'baca')" class="text-sm text-amber-400 hover:underline font-medium">Tandai Dibaca</button>` : ''}
                             ${forwardButton}
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
-            
             html += `</div>`;
             container.innerHTML = html;
             lucide.createIcons();
         }
-
         async function updateDisposisiStatus(disposisiId, statusType, value = null) {
             showLoading(true);
             try {
@@ -1032,43 +938,31 @@
                 loadMyDisposisi(1);
             }
         }
-
         function renderPagination(pageType, container, pagination, callback) {
             const { totalItems, totalPages, currentPage } = pagination;
-            if (totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
             const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
             const endItem = Math.min(startItem + ITEMS_PER_PAGE - 1, totalItems);
-
             let pageButtons = '';
             for(let i = 1; i <= totalPages; i++) {
                 pageButtons += `<button onclick="${callback.name}(${i})" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
             }
-
             container.innerHTML = `
                 <span class="text-gray-300">Menampilkan ${startItem}-${endItem} dari ${totalItems}</span>
                 <div class="flex items-center gap-2">
                     <button onclick="${callback.name}(${currentPage - 1})" class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>Sebelumnya</button>
                     ${pageButtons}
                     <button onclick="${callback.name}(${currentPage + 1})" class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya</button>
-                </div>
-            `;
+                </div>`;
         }
 
-
-        // --- HISTORY FUNCTIONS ---
-
+        // --- HISTORY ---
         async function openRiwayatModal(suratId, suratNomor) {
             const modal = document.getElementById('modal-riwayat');
             const container = document.getElementById('riwayat-timeline-container');
-            
             document.getElementById('riwayat-surat-nomor').textContent = `No. Surat: ${suratNomor}`;
             container.innerHTML = '<p class="text-gray-200">Memuat riwayat surat...</p>';
             modal.style.display = 'flex';
-            
             try {
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_surat_history&suratId=${suratId}`);
                 if (data.status === 'success') {
@@ -1081,15 +975,12 @@
                 container.innerHTML = `<p class="text-red-400">Kesalahan jaringan: ${error.message}</p>`;
             }
         }
-
         function renderRiwayat(container, history) {
             if (!history || history.length === 0) {
                 container.innerHTML = '<p class="text-gray-400">Tidak ada riwayat untuk surat ini.</p>';
                 return;
             }
-
             let html = '<div class="relative border-l-2 border-white/20 ml-3">';
-            
             history.forEach((item) => {
                 html += `
                     <div class="mb-8 ml-6">
@@ -1100,26 +991,22 @@
                         <time class="block mb-2 text-sm font-normal leading-none text-gray-400">${formatTanggalWaktu(item.timestamp)}</time>
                         <p class="mb-2 text-base font-normal text-gray-200">${item.action}</p>
                         <p class="text-sm font-italic text-gray-300 bg-black/20 p-2 rounded-md">Catatan: ${item.detail}</p>
-                    </div>
-                `;
+                    </div>`;
             });
-
             html += '</div>';
             container.innerHTML = html;
             lucide.createIcons();
         }
         
-        // --- ADMIN / USER MANAGEMENT FUNCTIONS ---
+        // --- DASHBOARD, ADMIN, & OTHER PAGES ---
         async function loadDashboardData() { 
             showLoading(true);
             try {
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_dashboard_data&userId=${currentUser.id}`);
-                
                 if (data.status === 'success') {
                     document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
                     document.getElementById('stat-unread').textContent = data.stats.inboxBelumDibaca || 0;
                     document.getElementById('stat-unfinished').textContent = data.stats.tugasBelumSelesai || 0;
-
                     const container = document.getElementById('disposisi-list-dashboard');
                     if (data.latestDisposisi && data.latestDisposisi.length > 0) {
                          let html = '';
@@ -1129,19 +1016,15 @@
                                     <p class="font-semibold text-white">${d.perihal}</p>
                                     <p class="text-sm text-gray-200">Disposisi dari <strong>${d.dari_user_nama}</strong>. 
                                     Status: <span class="font-medium ${d.status_baca === 'Belum Dibaca' ? 'text-red-400' : 'text-green-400'}">${d.status_baca}</span></p>
-                                </div>
-                            `;
+                                </div>`;
                          });
                          container.innerHTML = html;
                     } else {
                         container.innerHTML = '<p class="text-gray-200">Tidak ada disposisi atau notifikasi terbaru.</p>';
                     }
                 }
-            } catch (error) {
-                console.error('Load Dashboard error:', error);
-            } finally {
-                showLoading(false);
-            }
+            } catch (error) { console.error('Load Dashboard error:', error); } 
+            finally { showLoading(false); }
         }
         async function loadUserManagement() {
             const container = document.getElementById('user-management-content');
@@ -1161,32 +1044,27 @@
                 showLoading(false);
             }
         }
-
         function renderUserManagementList(container, users) {
              if (!users || users.length === 0) {
                 container.innerHTML = '<p class="text-gray-200 text-center py-4">Tidak ada data pengguna.</p>';
                 return;
             }
-
             let html = `
             <table class="min-w-full divide-y divide-white/20">
                 <thead class="bg-black/20">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama Lengkap</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">User ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Jabatan</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/20">
-            `;
-
+                <tbody class="divide-y divide-white/20">`;
             users.forEach(user => {
                 const statusClass = user.status === 'Aktif' ? 'bg-green-500/80' : 'bg-red-500/80';
                 const toggleStatusText = user.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan';
                 const toggleBtnClass = user.status === 'Aktif' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-sky-600 hover:bg-sky-700';
-
                 html += `
                     <tr class="hover:bg-black/10">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${user.nama}</td>
@@ -1200,26 +1078,21 @@
                            <button onclick="handleUserAction('${user.id}', 'reset_password')" class="px-3 py-1 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-xs">Reset Pass</button>
                            <button onclick="handleUserAction('${user.id}', 'toggle_status', '${user.status}')" class="px-3 py-1 rounded-md text-white ${toggleBtnClass} text-xs">${toggleStatusText}</button>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
-
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
-
         async function openUserModal(userId = null) {
             const modal = document.getElementById('modal-user-form');
             const form = document.getElementById('user-form');
             form.reset();
             document.getElementById('user-form-id').value = '';
             showMessage('user-form-message', '', false);
-
-            if (userId) { // Editing existing user
+            if (userId) {
                 document.getElementById('user-form-title').textContent = 'Edit User';
                 document.getElementById('user-form-notice').classList.add('hidden');
                 document.getElementById('user-form-id').value = userId;
-                
                 showLoading(true);
                 try {
                     const data = await fetchWithRetry(`${GAS_API_URL}?action=get_user_details&userId=${currentUser.id}&targetUserId=${userId}`);
@@ -1229,42 +1102,33 @@
                         document.getElementById('user-form-userid').value = user.userid;
                         document.getElementById('user-form-wa').value = user.wa;
                         document.getElementById('user-form-email').value = user.email || '';
-                        
                         const roleValue = JSON.stringify({ jabatan: user.jabatan, level: user.level });
                         document.getElementById('user-form-jabatan-level').value = roleValue;
-                    } else {
-                        throw new Error(data.message);
-                    }
+                    } else { throw new Error(data.message); }
                 } catch (error) {
                     showCustomAlert(`Gagal memuat data user: ${error.message}`, 'Error');
                     return;
-                } finally {
-                    showLoading(false);
-                }
-
-            } else { // Adding new user
+                } finally { showLoading(false); }
+            } else {
                 document.getElementById('user-form-title').textContent = 'Tambah User Baru';
                 document.getElementById('user-form-notice').classList.remove('hidden');
             }
             modal.style.display = 'flex';
         }
-
         async function handleUserFormSubmit(e) {
             e.preventDefault();
             const targetUserId = document.getElementById('user-form-id').value;
             const isEditing = !!targetUserId;
-
             const roleDataEl = document.getElementById('user-form-jabatan-level');
             if (!roleDataEl.value) {
                 showMessage('user-form-message', 'Jabatan & Level harus dipilih.', true);
                 return;
             }
             const { jabatan, level } = JSON.parse(roleDataEl.value);
-
             const payload = {
                 action: isEditing ? 'edit_user' : 'register',
                 adminUserId: currentUser.id,
-                targetUserId: targetUserId, // Will be ignored by 'register' action
+                targetUserId: targetUserId,
                 nama: document.getElementById('user-form-nama').value.trim(),
                 userid: document.getElementById('user-form-userid').value.trim(),
                 wa: document.getElementById('user-form-wa').value.trim(),
@@ -1272,7 +1136,6 @@
                 jabatan: jabatan,
                 level: level,
             };
-
             showLoading(true);
             try {
                 const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -1289,20 +1152,18 @@
                 showLoading(false);
             }
         }
-
         function handleUserAction(targetUserId, action, currentValue) {
             if (action === 'reset_password') {
                 showCustomConfirm('Anda yakin ingin mereset password user ini menjadi "password123"?', (confirmed) => {
                     if (confirmed) performUserAction(targetUserId, 'reset_password');
                 });
             } else if (action === 'toggle_status') {
-                const newStatus = currentValue === 'Aktif' ? 'Nonaktif' : 'Aktifkan';
+                const newStatus = currentValue === 'Aktif' ? 'Nonaktif' : 'Aktif';
                 showCustomConfirm(`Anda yakin ingin mengubah status user ini menjadi "${newStatus}"?`, (confirmed) => {
                      if (confirmed) performUserAction(targetUserId, 'update_user_status', newStatus);
                 });
             }
         }
-        
         async function performUserAction(targetUserId, actionType, newValue = null) {
             showLoading(true);
             try {
@@ -1311,12 +1172,8 @@
                     adminUserId: currentUser.id, 
                     targetUserId: targetUserId 
                 };
-                if(actionType === 'update_user_status') {
-                    payload.newStatus = newValue;
-                }
-
+                if(actionType === 'update_user_status') payload.newStatus = newValue;
                 const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                
                 if (result.status === 'success') {
                     showCustomAlert(result.message, 'Berhasil');
                     loadUserManagement();
@@ -1329,10 +1186,145 @@
                 showLoading(false);
             }
         }
-
         async function loadLogData() { /* Omitted for brevity */ }
         async function loadArsipData() { /* Omitted for brevity */ }
 
+        // --- PROFILE FUNCTIONS ---
+        function loadProfileData() {
+            if (!currentUser) return;
+            document.getElementById('profile-nama').value = currentUser.nama;
+            document.getElementById('profile-wa').value = currentUser.wa;
+            document.getElementById('profile-email').value = currentUser.email || '';
+            const profilePicUrl = currentUser.profile_pic_url || `${DEFAULT_PIC}&name=${encodeURIComponent(currentUser.nama)}`;
+            document.getElementById('profile-pic-display').src = profilePicUrl;
+            document.getElementById('remove-pic-btn').style.display = currentUser.profile_pic_url ? 'flex' : 'none';
+            document.getElementById('change-password-form').reset();
+            showMessage('password-form-message', '', false);
+        }
+        async function handleProfileInfoUpdate(e) {
+            e.preventDefault();
+            const payload = {
+                action: 'update_profile',
+                userId: currentUser.id,
+                nama: document.getElementById('profile-nama').value.trim(),
+                wa: document.getElementById('profile-wa').value.trim(),
+                email: document.getElementById('profile-email').value.trim(),
+            };
+            showLoading(true);
+            try {
+                const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                if (result.status === 'success') {
+                    currentUser = result.user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    document.getElementById('sidebar-user-name').textContent = currentUser.nama;
+                    document.getElementById('user-display-name').textContent = currentUser.nama;
+                    showCustomAlert('Informasi profil berhasil diperbarui.', 'Berhasil');
+                } else {
+                    showCustomAlert(result.message || 'Gagal memperbarui profil.', 'Error');
+                }
+            } catch (error) {
+                showCustomAlert('Terjadi kesalahan jaringan.', 'Error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmNewPassword = document.getElementById('confirm-new-password').value;
+            if (newPassword.length < 6) {
+                showMessage('password-form-message', 'Password baru minimal 6 karakter.', true);
+                return;
+            }
+            if (newPassword !== confirmNewPassword) {
+                showMessage('password-form-message', 'Konfirmasi password baru tidak cocok.', true);
+                return;
+            }
+            const payload = {
+                action: 'change_password',
+                userId: currentUser.id,
+                oldPassword: oldPassword,
+                newPassword: newPassword,
+            };
+            showLoading(true);
+            showMessage('password-form-message', '', false);
+            try {
+                const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                if (result.status === 'success') {
+                    showMessage('password-form-message', 'Password berhasil diubah.', false);
+                    e.target.reset();
+                } else {
+                    showMessage('password-form-message', result.message || 'Gagal mengubah password.', true);
+                }
+            } catch (error) {
+                showMessage('password-form-message', 'Terjadi kesalahan jaringan.', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+        function handleProfilePicChange(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 1024 * 1024) {
+                showCustomAlert('Ukuran file terlalu besar. Maksimal 1MB.', 'Error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                showLoading(true);
+                const base64File = event.target.result.split(',')[1];
+                const payload = {
+                    action: 'update_profile_picture',
+                    userId: currentUser.id,
+                    fileBase64: base64File,
+                    fileMimeType: file.type,
+                };
+                try {
+                    const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                    if (result.status === 'success') {
+                        currentUser.profile_pic_url = result.newUrl;
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        document.getElementById('sidebar-profile-pic').src = result.newUrl;
+                        document.getElementById('profile-pic-display').src = result.newUrl;
+                        document.getElementById('remove-pic-btn').style.display = 'flex';
+                        showCustomAlert('Foto profil berhasil diubah.', 'Berhasil');
+                    } else {
+                        showCustomAlert(result.message || 'Gagal mengubah foto.', 'Error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Terjadi kesalahan jaringan saat mengunggah.', 'Error');
+                } finally {
+                    showLoading(false);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        async function handleRemoveProfilePic() {
+            showCustomConfirm("Anda yakin ingin menghapus foto profil Anda?", async (confirmed) => {
+                if (!confirmed) return;
+                showLoading(true);
+                try {
+                    const payload = { action: 'remove_profile_picture', userId: currentUser.id };
+                    const result = await fetchWithRetry(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                    if (result.status === 'success') {
+                        currentUser = result.user;
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        const newPicUrl = `${DEFAULT_PIC}&name=${encodeURIComponent(currentUser.nama)}`;
+                        document.getElementById('sidebar-profile-pic').src = newPicUrl;
+                        document.getElementById('profile-pic-display').src = newPicUrl;
+                        document.getElementById('remove-pic-btn').style.display = 'none';
+                        showCustomAlert('Foto profil berhasil dihapus.', 'Berhasil');
+                    } else {
+                        showCustomAlert(result.message || 'Gagal menghapus foto.', 'Error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Terjadi kesalahan jaringan.', 'Error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+        }
     </script>
 </body>
 </html>
