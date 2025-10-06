@@ -132,7 +132,7 @@
                                     <option value="">Pilih Jabatan</option>
                                     <option value='{"jabatan": "Direktur", "level": 2}'>Direktur (Level 2)</option>
                                     <option value='{"jabatan": "Wadir Adminkeu", "level": 3}'>Wadir Adminkeu (Level 3)</option>
-<option value='{\"jabatan\": \"Wadir Pelayanan\", \"level\": 3}'>Wadir Pelayanan (Level 3)</option>
+<option value='{"jabatan": "Wadir Pelayanan", "level": 3}'>Wadir Pelayanan (Level 3)</option>
                                     <option value='{"jabatan": "Kabag", "level": 4}'>Kabag (Level 4)</option>
                                     <option value='{"jabatan": "Kabid", "level": 4}'>Kabid (Level 4)</option>
                                     <option value='{"jabatan": "JFT", "level": 5}'>JFT (Level 5)</option>
@@ -168,7 +168,7 @@
                     <div id="dashboard-content">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div class="p-6 glass-card border-t-4 border-sky-400">
-                                <p class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
+                                <p id="stat-masuk-label" class="text-sm font-medium text-gray-200">Surat Masuk Bulan Ini</p>
                                 <p class="text-3xl font-bold mt-1" id="stat-masuk">0</p>
                             </div>
                             <div class="p-6 glass-card border-t-4 border-amber-400">
@@ -401,7 +401,7 @@
                             <option value='{"jabatan": "Admin TU", "level": 1}'>Admin TU (Level 1)</option>
                             <option value='{"jabatan": "Direktur", "level": 2}'>Direktur (Level 2)</option>
                             <option value='{"jabatan": "Wadir Adminkeu", "level": 3}'>Wadir Adminkeu (Level 3)</option>
-<option value='{\"jabatan\": \"Wadir Pelayanan\", \"level\": 3}'>Wadir Pelayanan (Level 3)</option>
+<option value='{"jabatan": "Wadir Pelayanan", "level": 3}'>Wadir Pelayanan (Level 3)</option>
                             <option value='{"jabatan": "Kabag", "level": 4}'>Kabag (Level 4)</option>
                             <option value='{"jabatan": "Kabid", "level": 4}'>Kabid (Level 4)</option>
                             <option value='{"jabatan": "JFT", "level": 5}'>JFT (Level 5)</option>
@@ -1009,6 +1009,13 @@
         async function loadDashboardData() { 
             showLoading(true);
             try {
+                if (currentUser) {
+                    const isAdmin = [0, 1].includes(parseInt(currentUser.level));
+                    const labelEl = document.getElementById('stat-masuk-label');
+                    if (labelEl) {
+                        labelEl.textContent = isAdmin ? 'Total Surat Masuk RS Bulan Ini' : 'Disposisi Diterima Bulan Ini';
+                    }
+                }
                 const data = await fetchWithRetry(`${GAS_API_URL}?action=get_dashboard_data&userId=${currentUser.id}`);
                 if (data.status === 'success') {
                     document.getElementById('stat-masuk').textContent = data.stats.suratMasukBulanIni || 0;
@@ -1405,4 +1412,5 @@
     </script>
 </body>
 </html>
+
 
